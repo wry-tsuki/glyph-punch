@@ -6,6 +6,12 @@ export const LINE_HEIGHT = 1.62
 export const TEXT_AREA_RATIO = 0.66
 export const COMP_TOP_RATIO = 0.72
 
+/**
+ * 字号不要顶满可用宽度，留 4% 的余量：
+ * 这样所有对齐模式共用一个字号，左对齐留毛边，两端对齐才有空间把行撑满。
+ */
+const FIT_RATIO = 0.96
+
 export interface TextLayout {
   size: number
   cells: CharCell[]
@@ -62,7 +68,12 @@ function layoutAt(
     let step = size
     if (align === 'right') x0 = availW - n * size
     else if (align === 'center') x0 = (availW - n * size) / 2
-    else if (align === 'justify' && n > 1) step = (availW - size) / (n - 1)
+    else if (align === 'justify' && n > 1) {
+      // 只有接近满宽的行才拉字距；太短的行硬撑会拉出夸张空隙。
+      const natural = n * size
+      const ideal = (availW - size) / (n - 1)
+      if (natural >= availW * 0.65 && ideal <= size * 1.6) step = ideal
+    }
 
     ids.forEach((id, k) => {
       cells.push({
@@ -97,7 +108,7 @@ export function computeLayout(work: Work): BoardLayout {
   // 先尝试让每一行都不折行：字号由最长的一行决定。
   const paragraphs = work.text.split('\n')
   const longest = Math.max(1, ...paragraphs.map((line) => Array.from(line).length))
-  const noWrapSize = Math.min(96, Math.floor(availW / longest))
+  const noWrapSize = Math.min(96, Math.floor((availW * FIT_RATIO) / longest))
 
   let best = 0
   if (noWrapSize >= 14) {
@@ -188,26 +199,6 @@ export function randomTileSlot(
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min)
 
-function packRows(tiles: Work['tiles'], size: number, maxW: number): Work['tiles'][] {
-  const gap = size * 0.16
-  const perRow = Math.min(
-    10,
-    Math.max(1, Math.floor((maxW + gap) / (size + gap))),
-  )
-  const ordered = [...tiles].sort((a, b) => a.y - b.y || a.x - b.x)
-  const rowCount = Math.max(1, Math.ceil(ordered.length / perRow))
-  const base = Math.floor(ordered.length / rowCount)
-  const extra = ordered.length % rowCount
-  const rows: Work['tiles'][] = []
-  let cursor = 0
-  for (let i = 0; i < rowCount; i++) {
-    const count = base + (i < extra ? 1 : 0)
-    if (count > 0) rows.push(ordered.slice(cursor, cursor + count))
-    cursor += count
-  }
-  return rows
-}
-
 export function alignTiles(
   work: Work,
   size: number,
@@ -217,20 +208,29 @@ export function alignTiles(
 ): Work['tiles'] {
   if (work.tiles.length === 0) return []
 
+  const tolerance = size * 0.9
+  const sorted = [...work.tiles].sort((a, b) => a.y - b.y)
+  const rows: Work['tiles'][] = []
+
+  for (const tile of sorted) {
+    const centerY = tile.y + size / 2
+    const row = rows[rows.length - 1]
+    if (row && Math.abs(row[0].y + size / 2 - centerY) <= tolerance) {
+      row.push(tile)
+    } else {
+      rows.push([tile])
+    }
+  }
+
   const maxW = artW - PAD * 2
   const naturalGap = size * 0.24
-
-  // 自由摆放没有可靠的“行意图”，对齐一律按阅读顺序（y 再 x）
-  // 打包成行，每行最多 10 张，行数均分，结果可预测。
-  const finalRows = packRows(work.tiles, size, maxW)
-
   const out: Work['tiles'] = []
   const rowStep = size * 1.6
   const zoneH = artH - compTop
   const startY =
-    compTop + Math.max(28, (zoneH - finalRows.length * rowStep) / 2) + (rowStep - size) / 2
+    compTop + Math.max(28, (zoneH - rows.length * rowStep) / 2) + (rowStep - size) / 2
 
-  finalRows.forEach((row, rowIndex) => {
+  rows.forEach((row, rowIndex) => {
     const cells = [...row].sort((a, b) => a.x - b.x)
     const available = maxW - cells.length * size
     const gap = Math.max(0, Math.min(naturalGap, cells.length > 1 ? available / (cells.length - 1) : 0))
