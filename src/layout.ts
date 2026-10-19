@@ -211,9 +211,9 @@ export function alignTiles(
     const total = row.reduce((sum, tile) => sum + size * tile.jitter.scale, 0)
     return total + naturalGap * Math.max(0, row.length - 1)
   })
-  // 两端对齐时，以最长那一行的自然宽度作为两端，而不是画板边距。
-  const measure =
-    mode === 'justify' ? Math.min(maxW, Math.max(...rowWidths)) : maxW
+  // 先用最长行定出整块宽度，整块永远在创作区居中；
+  // 对齐方式只决定每一行在块内怎么摆。
+  const measure = Math.min(maxW, Math.max(...rowWidths))
   const blockLeft = PAD + Math.max(0, (maxW - measure) / 2)
 
   const out: Work['tiles'] = []
@@ -228,12 +228,11 @@ export function alignTiles(
     const totalW = widths.reduce((sum, width) => sum + width, 0)
     const natural = totalW + naturalGap * Math.max(0, cells.length - 1)
 
-    let cursor = PAD
+    let cursor = blockLeft
     let gap = naturalGap
     if (mode === 'center') {
-      cursor = PAD + (maxW - natural) / 2
+      cursor = blockLeft + (measure - natural) / 2
     } else if (mode === 'justify') {
-      cursor = blockLeft
       gap =
         cells.length > 1
           ? naturalGap + Math.max(0, measure - natural) / (cells.length - 1)
