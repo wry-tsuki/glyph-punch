@@ -109,31 +109,49 @@ export default function App() {
     })
   }
 
-  const punch = (charId: number) => {
-    if (current.punched.includes(charId)) return
-    if (board.chars[charId] === '\n') return
-    const slot = flowSlot(
-      current.tiles.length,
-      board.layout.size,
-      board.artW,
-      board.artH,
-      board.compTop,
-    )
+  const addTile = (charId: number, x: number, y: number, rot: number) => {
     const topZ = current.tiles.reduce((max, tile) => Math.max(max, tile.z), 0)
     commit({
       ...current,
       punched: [...current.punched, charId],
-      tiles: [
-        ...current.tiles,
-        { charId, x: slot.x, y: slot.y, rot: (Math.random() - 0.5) * 3, z: topZ + 1 },
-      ],
+      tiles: [...current.tiles, { charId, x, y, rot, z: topZ + 1 }],
     })
   }
 
+  const randomRot = () => (Math.random() - 0.5) * 12
+
+  const punch = (charId: number) => {
+    if (current.punched.includes(charId)) return
+    if (board.chars[charId] === '\n') return
+    const size = board.layout.size
+    const slot = flowSlot(current.tiles.length, size, board.artW, board.artH, board.compTop)
+    const x = Math.max(
+      0,
+      Math.min(board.artW - size, slot.x + (Math.random() - 0.5) * size * 0.6),
+    )
+    const y = Math.max(
+      board.compTop,
+      Math.min(board.artH - size, slot.y + (Math.random() - 0.5) * size * 0.5),
+    )
+    addTile(charId, x, y, randomRot())
+  }
+
+  const punchAt = (charId: number, centerX: number, centerY: number) => {
+    if (current.punched.includes(charId)) return
+    if (board.chars[charId] === '\n') return
+    const size = board.layout.size
+    const x = Math.max(0, Math.min(board.artW - size, centerX - size / 2))
+    const y = Math.max(board.compTop, Math.min(board.artH - size, centerY - size / 2))
+    addTile(charId, x, y, randomRot())
+  }
+
   const moveTile = (charId: number, x: number, y: number) => {
+    const topZ = current.tiles.reduce((max, tile) => Math.max(max, tile.z), 0)
     commit({
       ...current,
-      tiles: current.tiles.map((tile) => (tile.charId === charId ? { ...tile, x, y } : tile)),
+      tiles: current.tiles.map((tile) =>
+        tile.charId === charId ? { ...tile, x, y, z: topZ + 1 } : tile,
+      ),
     })
   }
 
@@ -142,16 +160,6 @@ export default function App() {
       ...current,
       punched: current.punched.filter((id) => id !== charId),
       tiles: current.tiles.filter((tile) => tile.charId !== charId),
-    })
-  }
-
-  const raiseTile = (charId: number) => {
-    const topZ = current.tiles.reduce((max, tile) => Math.max(max, tile.z), 0)
-    commit({
-      ...current,
-      tiles: current.tiles.map((tile) =>
-        tile.charId === charId ? { ...tile, z: topZ + 1 } : tile,
-      ),
     })
   }
 
@@ -404,14 +412,14 @@ export default function App() {
               fontStack={fontPack.stack}
               seed={seed}
               onPunch={punch}
+              onPunchAt={punchAt}
               onMoveTile={moveTile}
               onReturnTile={returnTile}
-              onRaiseTile={raiseTile}
             />
           </div>
         </div>
         <p className="stage-hint">
-          点击原文打孔 · 拖动纸片摆位 · 拖回原文区回填 · 对齐后会重新随机
+          从原文拖字到创作区 · 点击创作区的字放回原文 · 对齐会重新随机
         </p>
       </main>
     </div>

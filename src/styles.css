@@ -329,11 +329,33 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: crosshair;
+  cursor: grab;
 }
 
 .glyph:hover {
   background: rgba(0, 0, 0, 0.07);
+}
+
+.glyph:active {
+  cursor: grabbing;
+}
+
+.text-ghost {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1px;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
+  opacity: 0.88;
+  pointer-events: none;
+  z-index: 1000;
+  transform: rotate(-4deg);
+}
+
+.comp-zone.is-drop {
+  outline: 2px dashed rgba(246, 236, 210, 0.55);
+  outline-offset: -10px;
 }
 
 .hole {

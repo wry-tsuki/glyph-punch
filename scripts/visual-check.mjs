@@ -15,74 +15,84 @@ page.on('console', (message) => {
 })
 
 await page.goto('http://localhost:5173', { waitUntil: 'networkidle' })
+await page.evaluate(() => localStorage.clear())
+await page.reload({ waitUntil: 'networkidle' })
 await page.waitForTimeout(600)
 await page.screenshot({ path: '.shots/01-initial.png' })
 
+const board = await page.locator('.board').boundingBox()
 const ids = await page
   .locator('.glyph')
-  .evaluateAll((nodes) => nodes.slice(0, 8).map((node) => node.getAttribute('data-id')))
+  .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-id')))
 
-for (const id of ids) {
+// 1. 点击原文三个字：自动落到创作区
+for (const id of ids.slice(0, 3)) {
   await page.locator(`.glyph[data-id="${id}"]`).click()
   await page.waitForTimeout(80)
 }
-await page.waitForTimeout(500)
-await page.screenshot({ path: '.shots/02-punched.png' })
+const tilesAfterClick = await page.locator('.tile').count()
 
-const firstTile = page.locator('.tile').first()
-const tileBox = await firstTile.boundingBox()
-const boardBox = await page.locator('.board').boundingBox()
-if (tileBox && boardBox) {
-  await page.mouse.move(tileBox.x + tileBox.width / 2, tileBox.y + tileBox.height / 2)
-  await page.mouse.down()
-  await page.mouse.move(tileBox.x + 220, tileBox.y - 260, { steps: 12 })
-  await page.screenshot({ path: '.shots/03-dragging.png' })
-  await page.mouse.up()
-  await page.waitForTimeout(400)
-}
-await page.screenshot({ path: '.shots/04-returned.png' })
+// 2. 从原文拖第四个字到创作区，松手位置即落点
+const dragId = ids[3]
+const glyphBox = await page.locator(`.glyph[data-id="${dragId}"]`).boundingBox()
+const drop = { x: board.x + board.width * 0.55, y: board.y + board.height * 0.8 }
+await page.mouse.move(glyphBox.x + glyphBox.width / 2, glyphBox.y + glyphBox.height / 2)
+await page.mouse.down()
+await page.mouse.move(drop.x, drop.y, { steps: 14 })
+await page.waitForTimeout(150)
+await page.screenshot({ path: '.shots/02-text-drag.png' })
+await page.mouse.up()
+await page.waitForTimeout(350)
+await page.screenshot({ path: '.shots/03-dropped.png' })
 
-const tilesLeft = await page.locator('.tile').count()
-const holesLeft = await page.locator('.hole').count()
+const tilesAfterDrop = await page.locator('.tile').count()
+const lastTile = await page.locator('.tile').last().boundingBox()
+const dropDelta = lastTile
+  ? Math.hypot(lastTile.x + lastTile.width / 2 - drop.x, lastTile.y + lastTile.height / 2 - drop.y)
+  : -1
 
+// 3. 点击创作区的字，弹回原文
+await page.locator('.tile').first().click()
+await page.waitForTimeout(250)
+const tilesAfterReturnClick = await page.locator('.tile').count()
+
+// 4. 拖纸片回原文区，同样回填
+const tileBox = await page.locator('.tile').first().boundingBox()
+await page.mouse.move(tileBox.x + tileBox.width / 2, tileBox.y + tileBox.height / 2)
+await page.mouse.down()
+await page.mouse.move(board.x + board.width / 2, board.y + board.height * 0.2, { steps: 12 })
+await page.mouse.up()
+await page.waitForTimeout(300)
+const tilesAfterDragBack = await page.locator('.tile').count()
+
+// 5. 对齐 + 导出
 await page.getByRole('button', { name: '对齐', exact: true }).click()
-await page.waitForTimeout(500)
-await page.screenshot({ path: '.shots/05-aligned.png' })
+await page.waitForTimeout(400)
+await page.screenshot({ path: '.shots/04-aligned.png' })
 
 const [download] = await Promise.all([
   page.waitForEvent('download', { timeout: 15000 }),
   page.getByRole('button', { name: '导出 PNG' }).click(),
 ])
-await download.saveAs('.shots/06-export.png')
+await download.saveAs('.shots/05-export.png')
 
 await page.getByRole('button', { name: '1 : 1' }).click()
-await page.waitForTimeout(400)
-await page.screenshot({ path: '.shots/07-square.png' })
+await page.waitForTimeout(300)
+await page.screenshot({ path: '.shots/06-square.png' })
 
-await page.getByRole('button', { name: '两端' }).click()
-await page.waitForTimeout(400)
-await page.screenshot({ path: '.shots/08-justify.png' })
+console.log(
+  JSON.stringify(
+    {
+      tilesAfterClick,
+      tilesAfterDrop,
+      dropDeltaPx: Math.round(dropDelta),
+      tilesAfterReturnClick,
+      tilesAfterDragBack,
+      errors,
+    },
+    null,
+    2,
+  ),
+)
 
-await page.getByRole('button', { name: '思源宋体' }).click()
-await page.waitForTimeout(1200)
-await page.screenshot({ path: '.shots/09-noto.png' })
-const activeFont = await page
-  .locator('.glyph')
-  .first()
-  .evaluate((node) => getComputedStyle(node).fontFamily)
-
-console.log(JSON.stringify({ tilesLeft, holesLeft, errors, activeFont }, null, 2))
-
-const metrics = await page.evaluate(() => {
-  const board = document.querySelector('.board')
-  const glyph = document.querySelector('.glyph')
-  const tile = document.querySelector('.tile')
-  const rect = board?.getBoundingClientRect()
-  return {
-    board: rect ? { x: rect.x, y: rect.y, w: rect.width, h: rect.height } : null,
-    glyphTop: glyph instanceof HTMLElement ? glyph.style.top : null,
-    tile: tile instanceof HTMLElement ? { top: tile.style.top, left: tile.style.left } : null,
-  }
-})
-console.log(JSON.stringify(metrics, null, 2))
 await browser.close()
