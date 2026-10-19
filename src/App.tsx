@@ -314,168 +314,208 @@ export default function App() {
   return (
     <div className="app">
       <aside className="rail">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true" />
-          <div>
-            <h1>glyph punch</h1>
-            <p>古诗文打孔器</p>
+        <div className="rail-top">
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true" />
+            <div className="brand-text">
+              <h1>glyph punch</h1>
+              <p>古诗文打孔器</p>
+            </div>
+          </div>
+
+          <div className="doc">
+            <input
+              className="doc-title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              onBlur={applyTitle}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') event.currentTarget.blur()
+              }}
+              aria-label="作品标题"
+              placeholder="未命名作品"
+              title="重命名作品"
+            />
+            <div className="doc-row">
+              {state.works.length > 1 ? (
+                <select
+                  className="select"
+                  value={current.id}
+                  onChange={(event) => switchWork(event.target.value)}
+                  aria-label="选择作品"
+                >
+                  {state.works.map((work) => (
+                    <option key={work.id} value={work.id}>
+                      {work.title}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              <button className="mini" type="button" onClick={addWork} title="新建作品">
+                新建
+              </button>
+              <button className="mini" type="button" onClick={removeWork} title="删除当前作品">
+                删除
+              </button>
+            </div>
           </div>
         </div>
 
-        <section className="section">
-          <div className="section-title">作品</div>
-          <div className="row">
-            <select
-              className="select"
-              value={current.id}
-              onChange={(event) => switchWork(event.target.value)}
-              aria-label="选择作品"
+        <div className="rail-scroll">
+          <section className="group">
+            <h2 className="group-head">
+              <span>纸面</span>
+            </h2>
+
+            <div className="field">
+              <div className="field-head">
+                <label htmlFor="work-text">正文</label>
+                <span>{board.layout.cells.length} 字</span>
+              </div>
+              <textarea
+                id="work-text"
+                className="textarea"
+                style={{ fontFamily: fontPack.stack }}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                spellCheck={false}
+                aria-label="古诗文文本"
+                placeholder="粘贴一首古诗文，换行会保留"
+              />
+              <div className="field-foot">
+                <span>换行会保留</span>
+                <button className="mini is-primary" type="button" onClick={applyText}>
+                  应用文本
+                </button>
+              </div>
+            </div>
+
+            <div className="field">
+              <div className="field-head">
+                <span>比例</span>
+                <span>{RATIOS[current.ratio].label}</span>
+              </div>
+              <div className="seg" role="group" aria-label="画板比例">
+                {(Object.keys(RATIOS) as RatioId[]).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={current.ratio === id ? 'is-active' : ''}
+                    aria-pressed={current.ratio === id}
+                    onClick={() => changeRatio(id)}
+                  >
+                    {RATIOS[id].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="field">
+              <div className="field-head">
+                <span>配色</span>
+                <span>{palette.name}</span>
+              </div>
+              <div className="palette-row">
+                {PALETTES.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`palette-chip${current.paletteId === item.id ? ' is-active' : ''}`}
+                    aria-label={item.name}
+                    aria-pressed={current.paletteId === item.id}
+                    title={item.name}
+                    onClick={() => commit({ ...current, paletteId: item.id })}
+                  >
+                    <i style={{ background: item.paper }} />
+                    <i style={{ background: item.accent }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="field">
+              <div className="field-head">
+                <span>字体</span>
+                <span>{fontPack.note}</span>
+              </div>
+              <div className="font-row" role="group" aria-label="字体包">
+                {FONT_PACKS.map((pack) => (
+                  <button
+                    key={pack.id}
+                    type="button"
+                    className={`font-chip${current.fontId === pack.id ? ' is-active' : ''}`}
+                    aria-pressed={current.fontId === pack.id}
+                    style={{ fontFamily: pack.stack }}
+                    onClick={() => commit({ ...current, fontId: pack.id })}
+                  >
+                    {pack.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="group">
+            <h2 className="group-head">
+              <span>创作</span>
+            </h2>
+
+            <div className="field">
+              <div className="field-head">
+                <span>排布</span>
+                <span>{current.punched.length} 个孔</span>
+              </div>
+              <div className="seg" role="group" aria-label="纸片对齐">
+                {TILE_ALIGNS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={tileAlign === item.id ? 'is-active' : ''}
+                    aria-pressed={tileAlign === item.id}
+                    disabled={current.tiles.length === 0 || resetting}
+                    onClick={() => alignTo(item.id)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div className="dock">
+          <div className="dock-actions">
+            <button
+              className="mini"
+              type="button"
+              onClick={undo}
+              disabled={state.past.length === 0 || resetting}
             >
-              {state.works.map((work) => (
-                <option key={work.id} value={work.id}>
-                  {work.title}
-                </option>
-              ))}
-            </select>
-            <button className="btn" type="button" onClick={addWork}>
-              新建
-            </button>
-            <button className="btn" type="button" onClick={removeWork}>
-              删除
-            </button>
-          </div>
-          <input
-            className="input"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            onBlur={applyTitle}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur()
-            }}
-            aria-label="作品标题"
-            placeholder="作品标题"
-          />
-        </section>
-
-        <section className="section">
-          <div className="section-title">文本</div>
-          <textarea
-            className="textarea"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            spellCheck={false}
-            aria-label="古诗文文本"
-            placeholder="粘贴一首古诗文，换行会保留"
-          />
-          <div className="row">
-            <button className="btn btn-primary" type="button" onClick={applyText}>
-              应用文本
-            </button>
-            <span className="hint">{board.layout.cells.length} 字</span>
-          </div>
-        </section>
-
-        <section className="section">
-          <div className="section-title">版式</div>
-          <div className="seg" role="group" aria-label="画板比例">
-            {(Object.keys(RATIOS) as RatioId[]).map((id) => (
-              <button
-                key={id}
-                type="button"
-                className={current.ratio === id ? 'is-active' : ''}
-                aria-pressed={current.ratio === id}
-                onClick={() => changeRatio(id)}
-              >
-                {RATIOS[id].label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="section">
-          <div className="section-title">配色</div>
-          <div className="swatches">
-            {PALETTES.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`swatch${current.paletteId === item.id ? ' is-active' : ''}`}
-                aria-pressed={current.paletteId === item.id}
-                onClick={() => commit({ ...current, paletteId: item.id })}
-              >
-                <span className="swatch-pair" aria-hidden="true">
-                  <i style={{ background: item.paper }} />
-                  <i style={{ background: item.accent }} />
-                </span>
-                <span className="swatch-name">{item.name}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="section">
-          <div className="section-title">字体</div>
-          <div className="seg" role="group" aria-label="字体包">
-            {FONT_PACKS.map((pack) => (
-              <button
-                key={pack.id}
-                type="button"
-                className={current.fontId === pack.id ? 'is-active' : ''}
-                aria-pressed={current.fontId === pack.id}
-                onClick={() => commit({ ...current, fontId: pack.id })}
-              >
-                {pack.name}
-              </button>
-            ))}
-          </div>
-          <p className="stat">{fontPack.note}</p>
-        </section>
-
-        <section className="section">
-          <div className="section-title">创作区排布</div>
-          <div className="seg" role="group" aria-label="纸片对齐">
-            {TILE_ALIGNS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={tileAlign === item.id ? 'is-active' : ''}
-                aria-pressed={tileAlign === item.id}
-                disabled={current.tiles.length === 0 || resetting}
-                onClick={() => alignTo(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="section">
-          <div className="section-title">操作</div>
-          <div className="row">
-            <button className="btn" type="button" onClick={undo} disabled={state.past.length === 0 || resetting}>
               撤销
             </button>
-            <button className="btn" type="button" onClick={redo} disabled={state.future.length === 0 || resetting}>
+            <button
+              className="mini"
+              type="button"
+              onClick={redo}
+              disabled={state.future.length === 0 || resetting}
+            >
               重做
             </button>
+            <button
+              className="reset-link"
+              type="button"
+              onClick={resetAll}
+              disabled={current.tiles.length === 0 || resetting}
+              title="所有纸片飞回原文，可撤销"
+            >
+              {resetting ? '放回中…' : '全部放回原文'}
+            </button>
           </div>
-          <button
-            className="btn btn-block"
-            type="button"
-            onClick={resetAll}
-            disabled={current.tiles.length === 0 || resetting}
-          >
-            {resetting ? '放回中…' : '全部放回原文'}
-          </button>
-          <button className="btn btn-primary btn-block" type="button" onClick={doExport} disabled={busy || resetting}>
+          <button className="export" type="button" onClick={doExport} disabled={busy || resetting}>
             {busy ? '导出中…' : '导出 PNG'}
           </button>
-          <p className="stat">
-            {current.punched.length} 个孔 · 字号 {board.layout.size}px · {RATIOS[current.ratio].label}
-          </p>
-        </section>
-
-        <p className="rail-footer">v{__APP_VERSION__} · 预览版 · 作品存在本机</p>
+          <p className="rail-foot">v{__APP_VERSION__} · 预览版 · 作品存在本机</p>
+        </div>
       </aside>
 
       <main className="stage" ref={stageRef}>
@@ -503,7 +543,7 @@ export default function App() {
           </div>
         </div>
         <p className="stage-hint">
-          从原文拖字到创作区 · 点击创作区的字放回原文 · 对齐会重新随机
+          从原文拖字到创作区 · 点击创作区的字放回原文 · 排布按钮点一下即时对齐
         </p>
       </main>
     </div>
