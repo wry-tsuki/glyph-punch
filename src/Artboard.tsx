@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import type { BoardLayout } from './layout'
 import { holeGeometry } from './holes'
 import type { CharCell, Palette, Tile, Work } from './types'
@@ -101,6 +101,17 @@ interface TextDrag {
   overComp: boolean
 }
 
+interface ReturnFlight {
+  charId: number
+  fromX: number
+  fromY: number
+  toX: number
+  toY: number
+  rot: number
+  width: number
+  started: boolean
+}
+
 export default function Artboard({
   work,
   board,
@@ -129,6 +140,16 @@ export default function Artboard({
   } | null>(null)
   const [tileDrag, setTileDrag] = useState<TileDrag | null>(null)
   const [textDrag, setTextDrag] = useState<TextDrag | null>(null)
+  const [flight, setFlight] = useState<ReturnFlight | null>(null)
+  const flightRef = useRef<number | null>(null)
+  const flightTimer = useRef<number | null>(null)
+
+  useEffect(
+    () => () => {
+      if (flightTimer.current !== null) window.clearTimeout(flightTimer.current)
+    },
+    [],
+  )
 
   const { layout, chars, artW, artH, compTop } = board
   const size = layout.size
@@ -214,6 +235,38 @@ export default function Artboard({
     setTileDrag({ charId: dragging.charId, dx, dy, moved, overText: point.y < compTop })
   }
 
+  const startReturn = (charId: number) => {
+    if (flightRef.current !== null) return
+    const tile = work.tiles.find((item) => item.charId === charId)
+    const cell = layout.cells.find((item) => item.id === charId)
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!tile || !cell || reduceMotion) {
+      onReturnTile(charId)
+      return
+    }
+    const hole = holeGeometry(charId, seed, cell)
+    flightRef.current = charId
+    setFlight({
+      charId,
+      fromX: tile.x,
+      fromY: tile.y,
+      toX: hole.left,
+      toY: hole.top,
+      rot: hole.rot,
+      width: size * tile.scale,
+      started: false,
+    })
+    requestAnimationFrame(() => {
+      setFlight((current) => (current && current.charId === charId ? { ...current, started: true } : current))
+    })
+    flightTimer.current = window.setTimeout(() => {
+      flightRef.current = null
+      flightTimer.current = null
+      setFlight(null)
+      onReturnTile(charId)
+    }, 280)
+  }
+
   const endTileDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     const dragging = tileDragRef.current
     if (!dragging) return
@@ -224,7 +277,7 @@ export default function Artboard({
     setTileDrag(null)
 
     if (!dragging.moved) {
-      onReturnTile(dragging.charId)
+      startReturn(dragging.charId)
       return
     }
     if (point.y < compTop) {
@@ -275,6 +328,7 @@ export default function Artboard({
         seed={seed}
       />
       {work.tiles.map((tile) => {
+        if (flight?.charId === tile.charId) return null
         const isDragging = tileDrag?.charId === tile.charId
         const left = isDragging ? tile.x + tileDrag.dx : tile.x
         const top = isDragging ? tile.y + tileDrag.dy : tile.y
@@ -308,6 +362,28 @@ export default function Artboard({
       <div className={`dropzone${tileDrag?.overText ? ' is-active' : ''}`} style={{ height: compTop }}>
         {tileDrag?.overText ? <span className="drop-hint">松手放回原文</span> : null}
       </div>
+      {flight ? (
+        <div
+          className="tile-fly"
+          style={{
+            left: flight.fromX,
+            top: flight.fromY,
+            width: flight.width,
+            height: flight.width,
+            fontSize: flight.width * 0.82,
+            background: palette.chip,
+            color: palette.chipInk,
+            fontFamily: fontStack,
+            transform: `translate(${flight.started ? flight.toX - flight.fromX : 0}px, ${
+              flight.started ? flight.toY - flight.fromY : 0
+            }px) rotate(${flight.rot}deg)`,
+            opacity: flight.started ? 0.08 : 1,
+            transition: 'transform 260ms cubic-bezier(0.4, 0, 0.2, 1), opacity 260ms ease-in',
+          }}
+        >
+          {chars[flight.charId]}
+        </div>
+      ) : null}
       {textDrag?.active ? (
         <div
           className="text-ghost"

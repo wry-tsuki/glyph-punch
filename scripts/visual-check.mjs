@@ -66,7 +66,9 @@ const dropDelta = lastTile
 
 // 3. 点击创作区的字，弹回原文
 await page.locator('.tile').first().click()
-await page.waitForTimeout(250)
+await page.waitForTimeout(120)
+await page.screenshot({ path: '.shots/05-flight.png' })
+await page.waitForTimeout(400)
 const tilesAfterReturnClick = await page.locator('.tile').count()
 
 // 4. 拖纸片回原文区，同样回填
@@ -80,6 +82,8 @@ const tilesAfterDragBack = await page.locator('.tile').count()
 
 // 5. 对齐 + 导出
 await page.getByRole('button', { name: '对齐', exact: true }).click()
+await page.waitForTimeout(110)
+await page.screenshot({ path: '.shots/06-align-glide.png' })
 await page.waitForTimeout(400)
 await page.screenshot({ path: '.shots/04-aligned.png' })
 
