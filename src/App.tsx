@@ -314,93 +314,63 @@ export default function App() {
   return (
     <div className="app">
       <aside className="rail">
-        <div className="rail-top">
-          <div className="brand">
-            <span className="brand-mark" aria-hidden="true" />
-            <div className="brand-text">
-              <h1>glyph punch</h1>
-              <p>古诗文打孔器</p>
-            </div>
-          </div>
-
-          <div className="doc">
-            <input
-              className="doc-title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              onBlur={applyTitle}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') event.currentTarget.blur()
-              }}
-              aria-label="作品标题"
-              placeholder="未命名作品"
-              title="重命名作品"
-            />
-            <div className="doc-row">
-              {state.works.length > 1 ? (
-                <select
-                  className="select"
-                  value={current.id}
-                  onChange={(event) => switchWork(event.target.value)}
-                  aria-label="选择作品"
-                >
-                  {state.works.map((work) => (
-                    <option key={work.id} value={work.id}>
-                      {work.title}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
-              <button className="mini" type="button" onClick={addWork} title="新建作品">
-                新建
-              </button>
-              <button className="mini" type="button" onClick={removeWork} title="删除当前作品">
-                删除
-              </button>
-            </div>
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true" />
+          <div className="brand-text">
+            <h1>glyph punch</h1>
+            <p>古诗文打孔器</p>
           </div>
         </div>
 
         <div className="rail-scroll">
-          <section className="group">
-            <h2 className="group-head">
-              <span>纸面</span>
-            </h2>
+          <section className="region">
+            <h2 className="region-title">全局</h2>
 
-            <div className="field">
-              <div className="field-head">
-                <label htmlFor="work-text">正文</label>
-                <span>{board.layout.cells.length} 字</span>
-              </div>
-              <textarea
-                id="work-text"
-                className="textarea"
-                style={{ fontFamily: fontPack.stack }}
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                spellCheck={false}
-                aria-label="古诗文文本"
-                placeholder="粘贴一首古诗文，换行会保留"
+            <div className="doc">
+              <input
+                className="doc-title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                onBlur={applyTitle}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') event.currentTarget.blur()
+                }}
+                aria-label="作品标题"
+                placeholder="未命名作品"
+                title="重命名作品"
               />
-              <div className="field-foot">
-                <span>换行会保留</span>
-                <button className="mini is-primary" type="button" onClick={applyText}>
-                  应用文本
+              <div className="doc-tools">
+                <button className="text-btn" type="button" onClick={addWork} title="新建作品">
+                  新建
                 </button>
+                <button className="text-btn" type="button" onClick={removeWork} title="删除当前作品">
+                  删除
+                </button>
+                {state.works.length > 1 ? (
+                  <select
+                    className="doc-select"
+                    value={current.id}
+                    onChange={(event) => switchWork(event.target.value)}
+                    aria-label="选择作品"
+                  >
+                    {state.works.map((work) => (
+                      <option key={work.id} value={work.id}>
+                        {work.title}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
               </div>
             </div>
 
-            <div className="field">
-              <div className="field-head">
-                <span>比例</span>
-                <span>{RATIOS[current.ratio].label}</span>
-              </div>
-              <div className="seg" role="group" aria-label="画板比例">
+            <div className="row-line">
+              <span className="row-label">画板</span>
+              <div className="row-body">
                 {(Object.keys(RATIOS) as RatioId[]).map((id) => (
                   <button
                     key={id}
                     type="button"
-                    className={current.ratio === id ? 'is-active' : ''}
+                    className={`choice${current.ratio === id ? ' is-active' : ''}`}
                     aria-pressed={current.ratio === id}
                     onClick={() => changeRatio(id)}
                   >
@@ -410,42 +380,38 @@ export default function App() {
               </div>
             </div>
 
-            <div className="field">
-              <div className="field-head">
-                <span>配色</span>
-                <span>{palette.name}</span>
-              </div>
-              <div className="palette-row">
+            <div className="row-line">
+              <span className="row-label">配色</span>
+              <div className="row-body">
                 {PALETTES.map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    className={`palette-chip${current.paletteId === item.id ? ' is-active' : ''}`}
+                    className={`dot${current.paletteId === item.id ? ' is-active' : ''}`}
+                    style={{
+                      background: `linear-gradient(135deg, ${item.paper} 0 50%, ${item.accent} 50% 100%)`,
+                    }}
                     aria-label={item.name}
                     aria-pressed={current.paletteId === item.id}
                     title={item.name}
                     onClick={() => commit({ ...current, paletteId: item.id })}
-                  >
-                    <i style={{ background: item.paper }} />
-                    <i style={{ background: item.accent }} />
-                  </button>
+                  />
                 ))}
+                <span className="row-value">{palette.name}</span>
               </div>
             </div>
 
-            <div className="field">
-              <div className="field-head">
-                <span>字体</span>
-                <span>{fontPack.note}</span>
-              </div>
-              <div className="font-row" role="group" aria-label="字体包">
+            <div className="row-line">
+              <span className="row-label">字体</span>
+              <div className="row-body">
                 {FONT_PACKS.map((pack) => (
                   <button
                     key={pack.id}
                     type="button"
-                    className={`font-chip${current.fontId === pack.id ? ' is-active' : ''}`}
+                    className={`choice choice-font${current.fontId === pack.id ? ' is-active' : ''}`}
                     aria-pressed={current.fontId === pack.id}
                     style={{ fontFamily: pack.stack }}
+                    title={pack.note}
                     onClick={() => commit({ ...current, fontId: pack.id })}
                   >
                     {pack.name}
@@ -455,38 +421,50 @@ export default function App() {
             </div>
           </section>
 
-          <section className="group">
-            <h2 className="group-head">
-              <span>创作</span>
-            </h2>
-
-            <div className="field">
-              <div className="field-head">
-                <span>排布</span>
-                <span>{current.punched.length} 个孔</span>
-              </div>
-              <div className="seg" role="group" aria-label="纸片对齐">
-                {TILE_ALIGNS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={tileAlign === item.id ? 'is-active' : ''}
-                    aria-pressed={tileAlign === item.id}
-                    disabled={current.tiles.length === 0 || resetting}
-                    onClick={() => alignTo(item.id)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+          <section className="region">
+            <h2 className="region-title">原文</h2>
+            <div className="manuscript-foot">
+              <span>{board.layout.cells.length} 字 · 换行保留</span>
+              <button className="text-btn" type="button" onClick={applyText}>
+                应用文本
+              </button>
             </div>
+            <textarea
+              className="manuscript"
+              style={{ fontFamily: fontPack.stack }}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              spellCheck={false}
+              aria-label="古诗文文本"
+              placeholder="粘贴一首古诗文，换行会保留"
+            />
           </section>
         </div>
 
         <div className="dock">
+          <h2 className="region-title">创作</h2>
+
+          <div className="row-line">
+            <span className="row-label">排布</span>
+            <div className="row-body">
+              {TILE_ALIGNS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`choice${tileAlign === item.id ? ' is-active' : ''}`}
+                  aria-pressed={tileAlign === item.id}
+                  disabled={current.tiles.length === 0 || resetting}
+                  onClick={() => alignTo(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="dock-actions">
             <button
-              className="mini"
+              className="text-btn"
               type="button"
               onClick={undo}
               disabled={state.past.length === 0 || resetting}
@@ -494,7 +472,7 @@ export default function App() {
               撤销
             </button>
             <button
-              className="mini"
+              className="text-btn"
               type="button"
               onClick={redo}
               disabled={state.future.length === 0 || resetting}
@@ -502,7 +480,7 @@ export default function App() {
               重做
             </button>
             <button
-              className="reset-link"
+              className="text-btn text-danger"
               type="button"
               onClick={resetAll}
               disabled={current.tiles.length === 0 || resetting}
@@ -511,6 +489,7 @@ export default function App() {
               {resetting ? '放回中…' : '全部放回原文'}
             </button>
           </div>
+
           <button className="export" type="button" onClick={doExport} disabled={busy || resetting}>
             {busy ? '导出中…' : '导出 PNG'}
           </button>
