@@ -190,11 +190,20 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min)
 
 function packRows(tiles: Work['tiles'], size: number, maxW: number): Work['tiles'][] {
   const gap = size * 0.16
-  const perRow = Math.max(1, Math.floor((maxW + gap) / (size + gap)))
+  const perRow = Math.min(
+    10,
+    Math.max(1, Math.floor((maxW + gap) / (size + gap))),
+  )
   const ordered = [...tiles].sort((a, b) => a.y - b.y || a.x - b.x)
+  const rowCount = Math.max(1, Math.ceil(ordered.length / perRow))
+  const base = Math.floor(ordered.length / rowCount)
+  const extra = ordered.length % rowCount
   const rows: Work['tiles'][] = []
-  for (let i = 0; i < ordered.length; i += perRow) {
-    rows.push(ordered.slice(i, i + perRow))
+  let cursor = 0
+  for (let i = 0; i < rowCount; i++) {
+    const count = base + (i < extra ? 1 : 0)
+    if (count > 0) rows.push(ordered.slice(cursor, cursor + count))
+    cursor += count
   }
   return rows
 }
@@ -208,27 +217,12 @@ export function alignTiles(
 ): Work['tiles'] {
   if (work.tiles.length === 0) return []
 
-  const tolerance = size * 0.9
-  const sorted = [...work.tiles].sort((a, b) => a.y - b.y)
-  const rows: Work['tiles'][] = []
-
-  for (const tile of sorted) {
-    const centerY = tile.y + size / 2
-    const row = rows[rows.length - 1]
-    if (row && Math.abs(row[0].y + size / 2 - centerY) <= tolerance) {
-      row.push(tile)
-    } else {
-      rows.push([tile])
-    }
-  }
-
   const maxW = artW - PAD * 2
   const naturalGap = size * 0.24
 
-  // 平均每行不到两张时，行意图不成立（散落或零星成对），
-  // 按阅读顺序打包成行，否则会排出一列竖向的“行”。
-  const scattered = rows.length > 1 && work.tiles.length / rows.length < 1.8
-  const finalRows = scattered ? packRows(work.tiles, size, maxW) : rows
+  // 自由摆放没有可靠的“行意图”，对齐一律按阅读顺序（y 再 x）
+  // 打包成行，每行最多 10 张，行数均分，结果可预测。
+  const finalRows = packRows(work.tiles, size, maxW)
 
   const out: Work['tiles'] = []
   const rowStep = size * 1.6

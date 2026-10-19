@@ -86,6 +86,20 @@ export default function App() {
     })
   }
 
+  const cancelIncoming = () => {
+    if (incomingTimer.current !== null) {
+      window.clearTimeout(incomingTimer.current)
+      incomingTimer.current = null
+    }
+    setIncoming(null)
+  }
+
+  const resetAll = () => {
+    if (current.tiles.length === 0 && current.punched.length === 0) return
+    cancelIncoming()
+    commit({ ...current, punched: [], tiles: [] })
+  }
+
   const undo = () => {
     setState((previous) => {
       const restored = previous.past[previous.past.length - 1]
@@ -216,6 +230,7 @@ export default function App() {
   }
 
   const applyText = () => {
+    cancelIncoming()
     commit({ ...current, text: draft, punched: [], tiles: [] })
   }
 
@@ -229,10 +244,12 @@ export default function App() {
   }
 
   const switchWork = (id: string) => {
+    cancelIncoming()
     setState((previous) => ({ ...previous, currentId: id, past: [], future: [] }))
   }
 
   const addWork = () => {
+    cancelIncoming()
     const work = createWork({ title: `作品 ${state.works.length + 1}`, text: '' })
     setState((previous) => ({
       ...previous,
@@ -244,6 +261,7 @@ export default function App() {
   }
 
   const removeWork = () => {
+    cancelIncoming()
     setState((previous) => {
       if (previous.works.length <= 1) {
         const fresh = createWork({ text: '' })
@@ -414,6 +432,14 @@ export default function App() {
               重做
             </button>
           </div>
+          <button
+            className="btn btn-block"
+            type="button"
+            onClick={resetAll}
+            disabled={current.tiles.length === 0}
+          >
+            全部放回原文
+          </button>
           <button className="btn btn-primary btn-block" type="button" onClick={doExport} disabled={busy}>
             {busy ? '导出中…' : '导出 PNG'}
           </button>
