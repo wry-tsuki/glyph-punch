@@ -35,3 +35,6 @@ desktop.ini
 .cache/
 .temp/
 .tmp/
+
+# Local visual QA screenshots
+.shots/
