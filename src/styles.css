@@ -112,6 +112,11 @@ body {
   font-family: var(--serif);
   font-size: 19px;
   letter-spacing: 0.06em;
+  transition: border-color 0.15s;
+}
+
+.doc-title:hover {
+  border-bottom-color: rgba(232, 224, 200, 0.26);
 }
 
 .doc-title::placeholder {
@@ -134,16 +139,16 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 36px;
-  margin-top: 10px;
+  min-height: 38px;
+  margin-top: 12px;
 }
 
 .row-label {
   width: 42px;
   flex: none;
-  font-size: 11.5px;
+  font-size: 12px;
   letter-spacing: 0.14em;
-  color: rgba(232, 224, 200, 0.5);
+  color: rgba(232, 224, 200, 0.54);
 }
 
 .row-body {
@@ -170,9 +175,9 @@ body {
   border: 0;
   border-bottom: 1px solid transparent;
   background: none;
-  color: rgba(232, 224, 200, 0.62);
+  color: rgba(232, 224, 200, 0.66);
   font: inherit;
-  font-size: 13px;
+  font-size: 13.5px;
   letter-spacing: 0.03em;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
@@ -198,13 +203,19 @@ body {
 }
 
 .dot {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: 1px solid rgba(0, 0, 0, 0.35);
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   cursor: pointer;
+  transition: outline-color 0.15s;
+}
+
+.dot:hover {
+  outline: 1px solid rgba(201, 185, 143, 0.4);
+  outline-offset: 3px;
 }
 
 .dot.is-active {
@@ -298,8 +309,9 @@ body {
   min-height: 190px;
   margin: 0 -24px;
   padding: 14px 24px 0;
-  border-top: 1px solid rgba(232, 224, 200, 0.16);
-  background: linear-gradient(180deg, rgba(232, 224, 200, 0.045), rgba(232, 224, 200, 0.012));
+  border-top: 1px solid rgba(232, 224, 200, 0.2);
+  background: linear-gradient(180deg, rgba(232, 224, 200, 0.07), rgba(232, 224, 200, 0.02));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .paper-tools {
@@ -308,9 +320,9 @@ body {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 4px;
-  font-size: 11.5px;
+  font-size: 12px;
   letter-spacing: 0.04em;
-  color: rgba(232, 224, 200, 0.46);
+  color: rgba(232, 224, 200, 0.5);
 }
 
 .manuscript {
@@ -321,7 +333,7 @@ body {
   border: 0;
   background: transparent;
   color: #f0e8d4;
-  font-size: 14px;
+  font-size: 14.5px;
   line-height: 1.85;
   letter-spacing: 0.02em;
   resize: none;
@@ -340,9 +352,9 @@ body {
   border: 0;
   border-bottom: 1px solid transparent;
   background: none;
-  color: rgba(232, 224, 200, 0.72);
+  color: rgba(232, 224, 200, 0.74);
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
@@ -361,6 +373,15 @@ body {
 .text-danger {
   margin-left: auto;
   color: rgba(206, 140, 116, 0.85);
+}
+
+.text-accent {
+  color: var(--brass);
+}
+
+.text-accent:hover:not(:disabled) {
+  color: #e0cfa6;
+  border-bottom-color: rgba(201, 185, 143, 0.55);
 }
 
 .text-danger:hover:not(:disabled) {
@@ -398,13 +419,13 @@ body {
 
 .export {
   width: 100%;
-  height: 40px;
+  height: 42px;
   border: 1px solid var(--brass);
   border-radius: 2px;
   background: var(--brass);
   color: #151a20;
   font: inherit;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   letter-spacing: 0.16em;
   cursor: pointer;
@@ -433,26 +454,42 @@ body {
 .stage {
   position: relative;
   display: grid;
-  grid-template-rows: 1fr auto;
   place-items: center;
-  gap: 18px;
-  padding: 28px;
+  padding: 26px;
   background:
+    radial-gradient(1200px 820px at 50% 46%, transparent 40%, rgba(9, 11, 14, 0.55) 100%),
     radial-gradient(1000px 620px at 50% 26%, rgba(201, 185, 143, 0.07), transparent 72%),
     radial-gradient(rgba(232, 224, 200, 0.055) 1px, transparent 1px) 0 0 / 22px 22px,
     #12151a;
 }
 
-.stage-hint {
-  margin: 0;
+.stage-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 100%;
+}
+
+.stage-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
   font-size: 11.5px;
-  letter-spacing: 0.16em;
-  color: rgba(232, 224, 200, 0.34);
+  letter-spacing: 0.08em;
+  color: rgba(232, 224, 200, 0.42);
+}
+
+.stage-caption-meta {
+  color: rgba(232, 224, 200, 0.52);
+  letter-spacing: 0.1em;
 }
 
 .frame {
   position: relative;
-  box-shadow: 0 36px 90px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(232, 224, 200, 0.1);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.66), 0 0 0 1px rgba(201, 185, 143, 0.22);
 }
 
 .board-scaler {

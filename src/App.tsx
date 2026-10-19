@@ -80,7 +80,7 @@ export default function App() {
     if (!element) return
     const observer = new ResizeObserver(() => {
       const rect = element.getBoundingClientRect()
-      const next = Math.min((rect.width - 96) / board.artW, (rect.height - 120) / board.artH, 1)
+      const next = Math.min((rect.width - 96) / board.artW, (rect.height - 156) / board.artH, 1)
       setScale(Math.max(0.18, next))
     })
     observer.observe(element)
@@ -457,7 +457,7 @@ export default function App() {
           <section className="paper">
             <div className="paper-tools">
               <span>{board.layout.cells.length} 字 · 换行保留</span>
-              <button className="text-btn" type="button" onClick={applyText}>
+              <button className="text-btn text-accent" type="button" onClick={applyText}>
                 应用文本
               </button>
             </div>
@@ -528,32 +528,38 @@ export default function App() {
       </aside>
 
       <main className="stage" ref={stageRef}>
-        <div className="frame" style={{ width: board.artW * scale, height: board.artH * scale }}>
-          <div
-            className="board-scaler"
-            style={{
-              width: board.artW,
-              height: board.artH,
-              transform: `scale(${scale})`,
-            }}
-          >
-            <Artboard
-              work={current}
-              board={board}
-              palette={palette}
-              fontStack={fontPack.stack}
-              incoming={incoming}
-              resetting={resetting}
-              onPunch={punch}
-              onPunchAt={punchAt}
-              onMoveTile={moveTile}
-              onReturnTile={returnTile}
-            />
+        <div className="stage-stack">
+          <div className="frame" style={{ width: board.artW * scale, height: board.artH * scale }}>
+            <div
+              className="board-scaler"
+              style={{
+                width: board.artW,
+                height: board.artH,
+                transform: `scale(${scale})`,
+              }}
+            >
+              <Artboard
+                work={current}
+                board={board}
+                palette={palette}
+                fontStack={fontPack.stack}
+                incoming={incoming}
+                resetting={resetting}
+                onPunch={punch}
+                onPunchAt={punchAt}
+                onMoveTile={moveTile}
+                onReturnTile={returnTile}
+              />
+            </div>
+          </div>
+          <div className="stage-caption" style={{ width: board.artW * scale }}>
+            <span>拖动取字 · 点击纸片放回</span>
+            <span className="stage-caption-meta">
+              {RATIOS[current.ratio].label} / {board.artW} × {board.artH} / 字号{' '}
+              {board.layout.size} / {current.punched.length} 孔
+            </span>
           </div>
         </div>
-        <p className="stage-hint">
-          从原文拖字到创作区 · 点击创作区的字放回原文 · 排布按钮点一下即时对齐
-        </p>
       </main>
     </div>
   )
