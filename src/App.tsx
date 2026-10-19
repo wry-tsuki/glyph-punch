@@ -35,8 +35,10 @@ export default function App() {
   const [incoming, setIncoming] = useState<IncomingFlight | null>(null)
   const [resetting, setResetting] = useState(false)
   const [tileAlign, setTileAlign] = useState<TileAlign>('center')
+  const [workMenuOpen, setWorkMenuOpen] = useState(false)
   const incomingTimer = useRef<number | null>(null)
   const resetTimer = useRef<number | null>(null)
+  const workMenuRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.42)
 
@@ -58,6 +60,15 @@ export default function App() {
     },
     [],
   )
+
+  useEffect(() => {
+    if (!workMenuOpen) return
+    const closeOnOutside = (event: PointerEvent) => {
+      if (!workMenuRef.current?.contains(event.target as Node)) setWorkMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutside)
+    return () => document.removeEventListener('pointerdown', closeOnOutside)
+  }, [workMenuOpen])
 
   useEffect(() => {
     setDraft(current.text)
@@ -269,12 +280,14 @@ export default function App() {
 
   const switchWork = (id: string) => {
     if (resetting) return
+    setWorkMenuOpen(false)
     cancelIncoming()
     setState((previous) => ({ ...previous, currentId: id, past: [], future: [] }))
   }
 
   const addWork = () => {
     cancelIncoming()
+    setWorkMenuOpen(false)
     const work = createWork({ title: `作品 ${state.works.length + 1}`, text: '' })
     setState((previous) => ({
       ...previous,
@@ -287,6 +300,7 @@ export default function App() {
 
   const removeWork = () => {
     cancelIncoming()
+    setWorkMenuOpen(false)
     setState((previous) => {
       if (previous.works.length <= 1) {
         const fresh = createWork({ text: '' })
@@ -323,9 +337,7 @@ export default function App() {
         </div>
 
         <div className="rail-scroll">
-          <section className="region">
-            <h2 className="region-title">全局</h2>
-
+          <div className="settings">
             <div className="doc">
               <input
                 className="doc-title"
@@ -347,18 +359,39 @@ export default function App() {
                   删除
                 </button>
                 {state.works.length > 1 ? (
-                  <select
-                    className="doc-select"
-                    value={current.id}
-                    onChange={(event) => switchWork(event.target.value)}
-                    aria-label="选择作品"
-                  >
-                    {state.works.map((work) => (
-                      <option key={work.id} value={work.id}>
-                        {work.title}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="work-switch" ref={workMenuRef}>
+                    <button
+                      className="text-btn work-switch-btn"
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded={workMenuOpen}
+                      onClick={() => setWorkMenuOpen((open) => !open)}
+                    >
+                      切换作品
+                      <span className="caret" aria-hidden="true">
+                        ▾
+                      </span>
+                    </button>
+                    {workMenuOpen ? (
+                      <div className="work-menu" role="listbox" aria-label="作品列表">
+                        {state.works.map((work) => (
+                          <button
+                            key={work.id}
+                            type="button"
+                            role="option"
+                            aria-selected={work.id === current.id}
+                            className={work.id === current.id ? 'is-current' : ''}
+                            onClick={() => {
+                              switchWork(work.id)
+                              setWorkMenuOpen(false)
+                            }}
+                          >
+                            <span className="work-menu-title">{work.title}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -419,11 +452,10 @@ export default function App() {
                 ))}
               </div>
             </div>
-          </section>
+          </div>
 
-          <section className="region">
-            <h2 className="region-title">原文</h2>
-            <div className="manuscript-foot">
+          <section className="paper">
+            <div className="paper-tools">
               <span>{board.layout.cells.length} 字 · 换行保留</span>
               <button className="text-btn" type="button" onClick={applyText}>
                 应用文本
@@ -442,8 +474,6 @@ export default function App() {
         </div>
 
         <div className="dock">
-          <h2 className="region-title">创作</h2>
-
           <div className="row-line">
             <span className="row-label">排布</span>
             <div className="row-body">
