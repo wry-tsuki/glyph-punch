@@ -192,9 +192,6 @@ export function alignTiles(
         ...tile,
         x: startX + i * (size + gap) + rand(-size * 0.04, size * 0.04),
         y: rowY + rand(-size * 0.05, size * 0.05),
-        // 旋转角来自这块料的打孔抖动，不能被对齐重新随机，
-        // 否则洞和纸片就不是同一块了。
-        rot: tile.rot,
       })
     })
   })

@@ -1,5 +1,5 @@
 import { DEFAULT_FONT_ID } from './fonts'
-import { hashSeed, punchJitter } from './holes'
+import { legacyJitter } from './holes'
 import { createWork, type Work } from './types'
 
 const KEY = 'glyph-punch.v1'
@@ -15,22 +15,14 @@ export function loadStore(): Persisted | null {
     if (!raw) return null
     const parsed = JSON.parse(raw) as Persisted
     if (!Array.isArray(parsed.works) || parsed.works.length === 0) return null
-    parsed.works = parsed.works.map((work) => {
-      const seed = hashSeed(work.id)
-      return {
-        ...work,
-        fontId: work.fontId ?? DEFAULT_FONT_ID,
-        tiles: (work.tiles ?? []).map((tile) => {
-          const jitter = punchJitter(tile.charId, seed)
-          return {
-            ...tile,
-            // 旋转角统一回打孔抖动，保证洞和纸片是同一块料。
-            rot: jitter.rot,
-            scale: tile.scale ?? jitter.scale,
-          }
-        }),
-      }
-    })
+    parsed.works = parsed.works.map((work) => ({
+      ...work,
+      fontId: work.fontId ?? DEFAULT_FONT_ID,
+      tiles: (work.tiles ?? []).map((tile) => ({
+        ...tile,
+        jitter: tile.jitter ?? legacyJitter(tile.charId, work.id),
+      })),
+    }))
     if (!parsed.works.some((work) => work.id === parsed.currentId)) {
       parsed.currentId = parsed.works[0].id
     }

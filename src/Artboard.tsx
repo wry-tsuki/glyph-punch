@@ -1,24 +1,26 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { BoardLayout } from './layout'
-import { holeGeometry } from './holes'
-import type { CharCell, Palette, Tile, Work } from './types'
+import { holeGeometry, legacyJitter } from './holes'
+import type { CharCell, Palette, PunchJitter, Tile, Work } from './types'
 
 interface TextLayerProps {
   cells: CharCell[]
   punchedKey: string
+  jitters: Map<number, PunchJitter>
+  workId: string
   ink: string
   accent: string
   fontStack: string
-  seed: number
 }
 
 const TextLayer = memo(function TextLayer({
   cells,
   punchedKey,
+  jitters,
+  workId,
   ink,
   accent,
   fontStack,
-  seed,
 }: TextLayerProps) {
   const punched = punchedKey ? new Set(punchedKey.split(',').map(Number)) : new Set<number>()
   const holes: React.ReactNode[] = []
@@ -26,11 +28,13 @@ const TextLayer = memo(function TextLayer({
 
   for (const cell of cells) {
     if (punched.has(cell.id)) {
-      const hole = holeGeometry(cell.id, seed, cell)
+      const jitter = jitters.get(cell.id) ?? legacyJitter(cell.id, workId)
+      const hole = holeGeometry(jitter, cell)
       holes.push(
         <div
           key={`h${cell.id}`}
           className="hole"
+          data-char={cell.id}
           style={{
             left: hole.left,
             top: hole.top,
@@ -78,7 +82,6 @@ interface Props {
   board: BoardLayout
   palette: Palette
   fontStack: string
-  seed: number
   onPunch: (charId: number) => void
   onPunchAt: (charId: number, x: number, y: number) => void
   onMoveTile: (charId: number, x: number, y: number) => void
@@ -117,7 +120,6 @@ export default function Artboard({
   board,
   palette,
   fontStack,
-  seed,
   onPunch,
   onPunchAt,
   onMoveTile,
@@ -144,6 +146,9 @@ export default function Artboard({
   const flightRef = useRef<number | null>(null)
   const flightTimer = useRef<number | null>(null)
 
+  const { layout, chars, artW, artH, compTop } = board
+  const size = layout.size
+
   useEffect(
     () => () => {
       if (flightTimer.current !== null) window.clearTimeout(flightTimer.current)
@@ -151,8 +156,17 @@ export default function Artboard({
     [],
   )
 
-  const { layout, chars, artW, artH, compTop } = board
-  const size = layout.size
+  // 只有字片的抖动变化时才重建映射，拖动位置不会让原文层重渲染。
+  const jitterKey = work.tiles
+    .map(
+      (tile) =>
+        `${tile.charId}:${tile.jitter.rot}:${tile.jitter.scale}:${tile.jitter.dx}:${tile.jitter.dy}:${tile.jitter.radius}`,
+    )
+    .join('|')
+  const jitters = useMemo(
+    () => new Map(work.tiles.map((tile) => [tile.charId, tile.jitter] as const)),
+    [jitterKey],
+  )
 
   const toBoard = (clientX: number, clientY: number) => {
     const rect = boardRef.current?.getBoundingClientRect()
@@ -205,7 +219,7 @@ export default function Artboard({
     if (point.y >= compTop) onPunchAt(dragging.charId, point.x, point.y)
   }
 
-  /* ---------- 创作区纸片拖拽 / 点击 ---------- */
+  /* ---------- 创作区纸片拖拽 / 点击回填 ---------- */
 
   const startTileDrag = (event: React.PointerEvent<HTMLDivElement>, tile: Tile) => {
     if (event.button !== 0) return
@@ -244,7 +258,8 @@ export default function Artboard({
       onReturnTile(charId)
       return
     }
-    const hole = holeGeometry(charId, seed, cell)
+    const jitter = tile.jitter
+    const hole = holeGeometry(jitter, cell)
     flightRef.current = charId
     setFlight({
       charId,
@@ -252,12 +267,14 @@ export default function Artboard({
       fromY: tile.y,
       toX: hole.left,
       toY: hole.top,
-      rot: hole.rot,
-      width: size * tile.scale,
+      rot: jitter.rot,
+      width: size * jitter.scale,
       started: false,
     })
     requestAnimationFrame(() => {
-      setFlight((current) => (current && current.charId === charId ? { ...current, started: true } : current))
+      setFlight((current) =>
+        current && current.charId === charId ? { ...current, started: true } : current,
+      )
     })
     flightTimer.current = window.setTimeout(() => {
       flightRef.current = null
@@ -285,7 +302,7 @@ export default function Artboard({
       return
     }
     const dragged = work.tiles.find((tile) => tile.charId === dragging.charId)
-    const tileSize = size * (dragged?.scale ?? 1)
+    const tileSize = size * (dragged?.jitter.scale ?? 1)
     const nextX = Math.max(0, Math.min(artW - tileSize, dragging.tileX + dx))
     const nextY = Math.max(compTop, Math.min(artH - tileSize, dragging.tileY + dy))
     onMoveTile(dragging.charId, nextX, nextY)
@@ -322,32 +339,35 @@ export default function Artboard({
       <TextLayer
         cells={layout.cells}
         punchedKey={work.punched.join(',')}
+        jitters={jitters}
+        workId={work.id}
         ink={palette.ink}
         accent={palette.accent}
         fontStack={fontStack}
-        seed={seed}
       />
       {work.tiles.map((tile) => {
         if (flight?.charId === tile.charId) return null
         const isDragging = tileDrag?.charId === tile.charId
         const left = isDragging ? tile.x + tileDrag.dx : tile.x
         const top = isDragging ? tile.y + tileDrag.dy : tile.y
-        const tileSize = size * tile.scale
+        const jitter = tile.jitter
+        const tileSize = size * jitter.scale
         return (
           <div
             key={tile.charId}
             className={`tile${isDragging ? ' is-dragging' : ''}`}
+            data-char={tile.charId}
             style={{
               left,
               top,
               width: tileSize,
               height: tileSize,
-              transform: `rotate(${tile.rot}deg)`,
+              borderRadius: jitter.radius * size,
+              transform: `rotate(${jitter.rot}deg)`,
               zIndex: isDragging ? 999 : tile.z,
               background: palette.chip,
               color: palette.chipInk,
-              fontSize: tileSize * 0.82,
-              fontWeight: 600,
+              fontSize: tileSize,
               fontFamily: fontStack,
             }}
             onPointerDown={(event) => startTileDrag(event, tile)}
@@ -370,7 +390,7 @@ export default function Artboard({
             top: flight.fromY,
             width: flight.width,
             height: flight.width,
-            fontSize: flight.width * 0.82,
+            fontSize: flight.width,
             background: palette.chip,
             color: palette.chipInk,
             fontFamily: fontStack,
@@ -394,7 +414,7 @@ export default function Artboard({
             height: size,
             background: palette.chip,
             color: palette.chipInk,
-            fontSize: size * 0.82,
+            fontSize: size,
             fontFamily: fontStack,
           }}
         >

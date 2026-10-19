@@ -73,13 +73,21 @@ export interface CharCell {
   size: number
 }
 
+/** 一块被抠下来的料：洞和纸片共用这一组参数。 */
+export interface PunchJitter {
+  dx: number
+  dy: number
+  rot: number
+  scale: number
+  radius: number
+}
+
 export interface Tile {
   charId: number
   x: number
   y: number
-  rot: number
-  scale: number
   z: number
+  jitter: PunchJitter
 }
 
 export interface Work {

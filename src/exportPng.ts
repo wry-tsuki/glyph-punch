@@ -1,5 +1,5 @@
 import type { BoardLayout } from './layout'
-import { hashSeed, holeGeometry } from './holes'
+import { holeGeometry } from './holes'
 import type { Palette, Work } from './types'
 
 function roundedRect(
@@ -37,16 +37,18 @@ export async function exportPng(
 
   const size = layout.size
   const punched = new Set(work.punched)
-  const seed = hashSeed(work.id)
+  const jitters = new Map(work.tiles.map((tile) => [tile.charId, tile.jitter] as const))
 
   ctx.fillStyle = palette.paper
   ctx.fillRect(0, 0, artW, artH)
 
-  // 孔洞：与 DOM 使用同一套抖动参数，逐字绘制。
+  // 孔洞：与 DOM 使用同一组抖动参数，逐字绘制。
   ctx.fillStyle = palette.accent
   for (const cell of layout.cells) {
     if (!punched.has(cell.id)) continue
-    const hole = holeGeometry(cell.id, seed, cell)
+    const jitter = jitters.get(cell.id)
+    if (!jitter) continue
+    const hole = holeGeometry(jitter, cell)
     ctx.save()
     ctx.translate(hole.left + hole.width / 2, hole.top + hole.height / 2)
     ctx.rotate((hole.rot * Math.PI) / 180)
@@ -69,20 +71,22 @@ export async function exportPng(
   ctx.fillRect(0, compTop, artW, artH - compTop)
 
   for (const tile of work.tiles) {
-    const tileSize = size * tile.scale
+    const jitter = tile.jitter
+    const tileSize = size * jitter.scale
     const cx = tile.x + tileSize / 2
     const cy = tile.y + tileSize / 2
     ctx.save()
     ctx.translate(cx, cy)
-    ctx.rotate((tile.rot * Math.PI) / 180)
+    ctx.rotate((jitter.rot * Math.PI) / 180)
     ctx.shadowColor = 'rgba(0,0,0,0.28)'
     ctx.shadowBlur = tileSize * 0.18
     ctx.shadowOffsetY = tileSize * 0.06
     ctx.fillStyle = palette.chip
-    ctx.fillRect(-tileSize / 2, -tileSize / 2, tileSize, tileSize)
+    roundedRect(ctx, -tileSize / 2, -tileSize / 2, tileSize, tileSize, jitter.radius * size)
+    ctx.fill()
     ctx.shadowColor = 'transparent'
     ctx.fillStyle = palette.chipInk
-    ctx.font = `600 ${tileSize * 0.82}px ${fontStack}`
+    ctx.font = `${tileSize}px ${fontStack}`
     ctx.fillText(chars[tile.charId] ?? '', 0, tileSize * 0.02)
     ctx.restore()
   }

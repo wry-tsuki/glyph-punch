@@ -34,16 +34,24 @@ const tilesAfterClick = await page.locator('.tile').count()
 
 const readGeometry = () =>
   page.evaluate(() => {
-    const pick = (selector) =>
-      [...document.querySelectorAll(selector)].slice(0, 3).map((node) => ({
-        rot: node.style.transform,
-        w: node.style.width,
-      }))
-    return { holes: pick('.hole'), tiles: pick('.tile') }
+    const shape = (node) => ({
+      id: node.dataset.char,
+      rot: node.style.transform,
+      w: node.style.width,
+    })
+    const holes = [...document.querySelectorAll('.hole')].map(shape)
+    const tiles = [...document.querySelectorAll('.tile')].map(shape)
+    const byId = (list) =>
+      list
+        .slice()
+        .sort((a, b) => Number(a.id) - Number(b.id))
+        .map((item) => `${item.id}|${item.rot}|${item.w}`)
+        .join(';')
+    return { holes, tiles, matched: byId(holes) === byId(tiles) }
   })
 
 const geometryAfterClick = await readGeometry()
-const sameShape = JSON.stringify(geometryAfterClick.holes) === JSON.stringify(geometryAfterClick.tiles)
+const sameShape = geometryAfterClick.matched
 
 // 2. 从原文拖第四个字到创作区，松手位置即落点
 const dragId = ids[3]
@@ -80,6 +88,34 @@ await page.mouse.up()
 await page.waitForTimeout(300)
 const tilesAfterDragBack = await page.locator('.tile').count()
 
+// 5. 纸片字号应与原文字号一致
+const fontSizeProbe = await page.evaluate(() => {
+  const glyph = document.querySelector('.glyph')
+  const tile = document.querySelector('.tile')
+  return {
+    glyph: glyph ? getComputedStyle(glyph).fontSize : null,
+    tile: tile ? getComputedStyle(tile).fontSize : null,
+  }
+})
+
+// 6. 同一个字重新取一次，应当得到新的随机角度/尺寸
+const randomCharId = ids[20]
+const readLastTile = async () =>
+  page
+    .locator('.tile')
+    .last()
+    .evaluate((node) => ({ transform: node.style.transform, width: node.style.width }))
+
+await page.locator(`.glyph[data-id="${randomCharId}"]`).click()
+await page.waitForTimeout(350)
+const firstShape = await readLastTile()
+await page.locator('.tile').last().click()
+await page.waitForTimeout(650)
+await page.locator(`.glyph[data-id="${randomCharId}"]`).click()
+await page.waitForTimeout(350)
+const secondShape = await readLastTile()
+const jitterRerolled = JSON.stringify(firstShape) !== JSON.stringify(secondShape)
+
 // 5. 对齐 + 导出
 await page.getByRole('button', { name: '对齐', exact: true }).click()
 await page.waitForTimeout(110)
@@ -88,8 +124,11 @@ await page.waitForTimeout(400)
 await page.screenshot({ path: '.shots/04-aligned.png' })
 
 const geometryAfterAlign = await readGeometry()
-const sameShapeAfterAlign =
-  JSON.stringify(geometryAfterAlign.holes) === JSON.stringify(geometryAfterAlign.tiles)
+const sameShapeAfterAlign = geometryAfterAlign.matched
+const countsAfterAlign = {
+  holes: await page.locator('.hole').count(),
+  tiles: await page.locator('.tile').count(),
+}
 
 const [download] = await Promise.all([
   page.waitForEvent('download', { timeout: 15000 }),
@@ -111,6 +150,12 @@ console.log(
       tilesAfterDragBack,
       sameShape,
       sameShapeAfterAlign,
+      geometryAfterAlign,
+      countsAfterAlign,
+      fontSizeProbe,
+      jitterRerolled,
+      firstShape,
+      secondShape,
       geometryAfterClick,
       errors,
     },
