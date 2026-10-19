@@ -1,11 +1,30 @@
 import type { BoardLayout } from './layout'
+import { hashSeed, holeGeometry } from './holes'
 import type { Palette, Work } from './types'
-import { FONT_STACK } from './layout'
+
+function roundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  const r = Math.min(radius, width / 2, height / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + width, y, x + width, y + height, r)
+  ctx.arcTo(x + width, y + height, x, y + height, r)
+  ctx.arcTo(x, y + height, x, y, r)
+  ctx.arcTo(x, y, x + width, y, r)
+  ctx.closePath()
+}
 
 export async function exportPng(
   work: Work,
   board: BoardLayout,
   palette: Palette,
+  fontStack: string,
 ): Promise<void> {
   const { layout, chars, artW, artH, compTop } = board
   if (document.fonts?.ready) await document.fonts.ready
@@ -18,22 +37,32 @@ export async function exportPng(
 
   const size = layout.size
   const punched = new Set(work.punched)
+  const seed = hashSeed(work.id)
 
   ctx.fillStyle = palette.paper
   ctx.fillRect(0, 0, artW, artH)
 
+  // 孔洞：与 DOM 使用同一套抖动参数，逐字绘制。
+  ctx.fillStyle = palette.accent
+  for (const cell of layout.cells) {
+    if (!punched.has(cell.id)) continue
+    const hole = holeGeometry(cell.id, seed, cell)
+    ctx.save()
+    ctx.translate(hole.left + hole.width / 2, hole.top + hole.height / 2)
+    ctx.rotate((hole.rot * Math.PI) / 180)
+    roundedRect(ctx, -hole.width / 2, -hole.height / 2, hole.width, hole.height, hole.radius)
+    ctx.fill()
+    ctx.restore()
+  }
+
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.font = `${size}px ${FONT_STACK}`
+  ctx.font = `${size}px ${fontStack}`
 
   for (const cell of layout.cells) {
-    if (punched.has(cell.id)) {
-      ctx.fillStyle = palette.accent
-      ctx.fillRect(cell.x, cell.y, cell.size, cell.size)
-    } else {
-      ctx.fillStyle = palette.ink
-      ctx.fillText(cell.ch, cell.x + cell.size / 2, cell.y + cell.size * 0.54)
-    }
+    if (punched.has(cell.id)) continue
+    ctx.fillStyle = palette.ink
+    ctx.fillText(cell.ch, cell.x + cell.size / 2, cell.y + cell.size * 0.54)
   }
 
   ctx.fillStyle = palette.accent
@@ -52,7 +81,7 @@ export async function exportPng(
     ctx.fillRect(-size / 2, -size / 2, size, size)
     ctx.shadowColor = 'transparent'
     ctx.fillStyle = palette.chipInk
-    ctx.font = `600 ${size * 0.82}px ${FONT_STACK}`
+    ctx.font = `600 ${size * 0.82}px ${fontStack}`
     ctx.fillText(chars[tile.charId] ?? '', 0, size * 0.02)
     ctx.restore()
   }

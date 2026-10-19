@@ -1,9 +1,6 @@
 import type { AlignMode, CharCell, RatioId, Work } from './types'
 import { RATIOS } from './types'
 
-export const FONT_STACK =
-  '"Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", serif'
-
 export const PAD = 76
 export const LINE_HEIGHT = 1.62
 export const TEXT_AREA_RATIO = 0.66

@@ -63,7 +63,15 @@ await page.getByRole('button', { name: '两端' }).click()
 await page.waitForTimeout(400)
 await page.screenshot({ path: '.shots/08-justify.png' })
 
-console.log(JSON.stringify({ tilesLeft, holesLeft, errors }, null, 2))
+await page.getByRole('button', { name: '思源宋体' }).click()
+await page.waitForTimeout(1200)
+await page.screenshot({ path: '.shots/09-noto.png' })
+const activeFont = await page
+  .locator('.glyph')
+  .first()
+  .evaluate((node) => getComputedStyle(node).fontFamily)
+
+console.log(JSON.stringify({ tilesLeft, holesLeft, errors, activeFont }, null, 2))
 
 const metrics = await page.evaluate(() => {
   const board = document.querySelector('.board')

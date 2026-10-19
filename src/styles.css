@@ -259,6 +259,15 @@ body {
   color: var(--dim);
 }
 
+.rail-footer {
+  margin: auto 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--rail-line);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: rgba(232, 224, 200, 0.3);
+}
+
 /* ---------- stage ---------- */
 
 .stage {
@@ -335,12 +344,12 @@ body {
 
 @keyframes hole-in {
   from {
-    transform: scale(0.72);
-    opacity: 0.4;
+    opacity: 0.3;
+    scale: 0.86;
   }
   to {
-    transform: scale(1);
     opacity: 1;
+    scale: 1;
   }
 }
 

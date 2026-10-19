@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Artboard from './Artboard'
 import { exportPng } from './exportPng'
+import { FONT_PACKS, fontPackOf } from './fonts'
+import { hashSeed } from './holes'
 import { alignTiles, computeLayout, flowSlot } from './layout'
 import { initialStore, loadStore, saveStore, type Persisted } from './storage'
 import {
@@ -37,6 +39,8 @@ export default function App() {
     [current.text, current.ratio, current.align],
   )
   const palette = paletteOf(current.paletteId)
+  const fontPack = fontPackOf(current.fontId)
+  const seed = useMemo(() => hashSeed(current.id), [current.id])
 
   useEffect(() => {
     saveStore({ works: state.works, currentId: state.currentId })
@@ -220,7 +224,7 @@ export default function App() {
   const doExport = async () => {
     setBusy(true)
     try {
-      await exportPng(current, board, palette)
+      await exportPng(current, board, palette, fontPack.stack)
     } finally {
       setBusy(false)
     }
@@ -342,6 +346,24 @@ export default function App() {
         </section>
 
         <section className="section">
+          <div className="section-title">字体</div>
+          <div className="seg" role="group" aria-label="字体包">
+            {FONT_PACKS.map((pack) => (
+              <button
+                key={pack.id}
+                type="button"
+                className={current.fontId === pack.id ? 'is-active' : ''}
+                aria-pressed={current.fontId === pack.id}
+                onClick={() => commit({ ...current, fontId: pack.id })}
+              >
+                {pack.name}
+              </button>
+            ))}
+          </div>
+          <p className="stat">{fontPack.note}</p>
+        </section>
+
+        <section className="section">
           <div className="section-title">操作</div>
           <div className="row">
             <button className="btn" type="button" onClick={doAlign} disabled={current.tiles.length === 0}>
@@ -361,6 +383,8 @@ export default function App() {
             {current.punched.length} 个孔 · 字号 {board.layout.size}px · {RATIOS[current.ratio].label}
           </p>
         </section>
+
+        <p className="rail-footer">v{__APP_VERSION__} · 预览版 · 作品存在本机</p>
       </aside>
 
       <main className="stage" ref={stageRef}>
@@ -377,6 +401,8 @@ export default function App() {
               work={current}
               board={board}
               palette={palette}
+              fontStack={fontPack.stack}
+              seed={seed}
               onPunch={punch}
               onMoveTile={moveTile}
               onReturnTile={returnTile}

@@ -1,3 +1,5 @@
+import { DEFAULT_FONT_ID } from './fonts'
+
 export type RatioId = '3:4' | '1:1' | '9:16'
 export type AlignMode = 'left' | 'justify' | 'center' | 'right'
 
@@ -85,6 +87,7 @@ export interface Work {
   text: string
   ratio: RatioId
   paletteId: string
+  fontId: string
   align: AlignMode
   punched: number[]
   tiles: Tile[]
@@ -107,6 +110,7 @@ export function createWork(partial: Partial<Work> = {}): Work {
     text: SAMPLE_TEXT,
     ratio: '3:4',
     paletteId: 'xuan',
+    fontId: DEFAULT_FONT_ID,
     align: 'left',
     punched: [],
     tiles: [],

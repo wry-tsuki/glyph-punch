@@ -1,6 +1,6 @@
 import { memo, useRef, useState } from 'react'
 import type { BoardLayout } from './layout'
-import { FONT_STACK } from './layout'
+import { holeGeometry } from './holes'
 import type { CharCell, Palette, Tile, Work } from './types'
 
 interface TextLayerProps {
@@ -8,69 +8,67 @@ interface TextLayerProps {
   punchedKey: string
   ink: string
   accent: string
+  fontStack: string
+  seed: number
 }
 
-const TextLayer = memo(function TextLayer({ cells, punchedKey, ink, accent }: TextLayerProps) {
+const TextLayer = memo(function TextLayer({
+  cells,
+  punchedKey,
+  ink,
+  accent,
+  fontStack,
+  seed,
+}: TextLayerProps) {
   const punched = punchedKey ? new Set(punchedKey.split(',').map(Number)) : new Set<number>()
+  const holes: React.ReactNode[] = []
+  const glyphs: React.ReactNode[] = []
 
-  type Item =
-    | { type: 'hole'; key: string; x: number; y: number; w: number; h: number }
-    | { type: 'glyph'; key: string; cell: CharCell }
-
-  const items: Item[] = []
   for (const cell of cells) {
-    if (!punched.has(cell.id)) {
-      items.push({ type: 'glyph', key: `g${cell.id}`, cell })
+    if (punched.has(cell.id)) {
+      const hole = holeGeometry(cell.id, seed, cell)
+      holes.push(
+        <div
+          key={`h${cell.id}`}
+          className="hole"
+          style={{
+            left: hole.left,
+            top: hole.top,
+            width: hole.width,
+            height: hole.height,
+            borderRadius: hole.radius,
+            background: accent,
+            transform: `rotate(${hole.rot}deg)`,
+          }}
+        />,
+      )
       continue
     }
-    const last = items[items.length - 1]
-    if (
-      last &&
-      last.type === 'hole' &&
-      Math.abs(last.y - cell.y) < 0.5 &&
-      Math.abs(last.x + last.w - cell.x) < cell.size * 0.06
-    ) {
-      last.w += cell.size
-    } else {
-      items.push({ type: 'hole', key: `h${cell.id}`, x: cell.x, y: cell.y, w: cell.size, h: cell.size })
-    }
+    glyphs.push(
+      <span
+        key={`g${cell.id}`}
+        className="glyph"
+        data-id={cell.id}
+        style={{
+          left: cell.x,
+          top: cell.y,
+          width: cell.size,
+          height: cell.size,
+          fontSize: cell.size,
+          lineHeight: `${cell.size}px`,
+          color: ink,
+          fontFamily: fontStack,
+        }}
+      >
+        {cell.ch}
+      </span>,
+    )
   }
 
   return (
     <>
-      {items.map((item) =>
-        item.type === 'hole' ? (
-          <div
-            key={item.key}
-            className="hole"
-            style={{
-              left: item.x,
-              top: item.y,
-              width: item.w,
-              height: item.h,
-              background: accent,
-            }}
-          />
-        ) : (
-          <span
-            key={item.key}
-            className="glyph"
-            data-id={item.cell.id}
-            style={{
-              left: item.cell.x,
-              top: item.cell.y,
-              width: item.cell.size,
-              height: item.cell.size,
-              fontSize: item.cell.size,
-              lineHeight: `${item.cell.size}px`,
-              color: ink,
-              fontFamily: FONT_STACK,
-            }}
-          >
-            {item.cell.ch}
-          </span>
-        ),
-      )}
+      {holes}
+      {glyphs}
     </>
   )
 })
@@ -79,6 +77,8 @@ interface Props {
   work: Work
   board: BoardLayout
   palette: Palette
+  fontStack: string
+  seed: number
   onPunch: (charId: number) => void
   onMoveTile: (charId: number, x: number, y: number) => void
   onReturnTile: (charId: number) => void
@@ -97,6 +97,8 @@ export default function Artboard({
   work,
   board,
   palette,
+  fontStack,
+  seed,
   onPunch,
   onMoveTile,
   onReturnTile,
@@ -205,6 +207,8 @@ export default function Artboard({
         punchedKey={work.punched.join(',')}
         ink={palette.ink}
         accent={palette.accent}
+        fontStack={fontStack}
+        seed={seed}
       />
       {work.tiles.map((tile) => {
         const isDragging = drag?.charId === tile.charId
@@ -225,7 +229,7 @@ export default function Artboard({
               color: palette.chipInk,
               fontSize: size * 0.82,
               fontWeight: 600,
-              fontFamily: FONT_STACK,
+              fontFamily: fontStack,
             }}
             onPointerDown={(event) => startDrag(event, tile)}
             onPointerMove={moveDrag}
