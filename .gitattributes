@@ -1,0 +1,26 @@
+# Normalize line endings: store LF in the repository, check out LF everywhere.
+* text=auto eol=lf
+
+# Explicit text types
+*.md       text
+*.json     text
+*.yml      text
+*.yaml     text
+*.ts       text
+*.tsx      text
+*.js       text
+*.jsx      text
+*.css      text
+*.html     text
+
+# Binary types (never diff or convert)
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.webp     binary
+*.ico      binary
+*.woff     binary
+*.woff2    binary
+*.ttf      binary
+*.otf      binary
