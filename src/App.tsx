@@ -8,10 +8,12 @@ import { initialStore, loadStore, saveStore, type Persisted } from './storage'
 import {
   PALETTES,
   RATIOS,
+  TILE_ALIGNS,
   createWork,
   paletteOf,
   type PunchJitter,
   type RatioId,
+  type TileAlign,
   type Work,
 } from './types'
 
@@ -32,6 +34,7 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [incoming, setIncoming] = useState<IncomingFlight | null>(null)
   const [resetting, setResetting] = useState(false)
+  const [tileAlign, setTileAlign] = useState<TileAlign>('center')
   const incomingTimer = useRef<number | null>(null)
   const resetTimer = useRef<number | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
@@ -224,12 +227,13 @@ export default function App() {
     })
   }
 
-  const doAlign = () => {
+  const alignTo = (mode: TileAlign) => {
     if (resetting) return
+    setTileAlign(mode)
     if (current.tiles.length === 0) return
     commit({
       ...current,
-      tiles: alignTiles(current, board.layout.size, board.artW, board.artH, board.compTop),
+      tiles: alignTiles(current, board.layout.size, board.artW, board.artH, board.compTop, mode),
     })
   }
 
@@ -428,11 +432,26 @@ export default function App() {
         </section>
 
         <section className="section">
+          <div className="section-title">创作区排布</div>
+          <div className="seg" role="group" aria-label="纸片对齐">
+            {TILE_ALIGNS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={tileAlign === item.id ? 'is-active' : ''}
+                aria-pressed={tileAlign === item.id}
+                disabled={current.tiles.length === 0 || resetting}
+                onClick={() => alignTo(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="section">
           <div className="section-title">操作</div>
           <div className="row">
-            <button className="btn" type="button" onClick={doAlign} disabled={current.tiles.length === 0 || resetting}>
-              对齐
-            </button>
             <button className="btn" type="button" onClick={undo} disabled={state.past.length === 0 || resetting}>
               撤销
             </button>

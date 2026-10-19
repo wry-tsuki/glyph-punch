@@ -29,10 +29,10 @@ const k = board.width / 1080
 for (let i = 0; i < 12; i++) {
   const tile = page.locator('.tile').nth(i)
   const box = await tile.boundingBox()
-  const col = i % 6
-  const row = Math.floor(i / 6)
-  const targetX = board.x + (76 + col * 140) * k
-  const targetY = board.y + (1037 + 90 + row * 150) * k
+  const row = i < 7 ? 0 : 1
+  const col = i < 7 ? i : i - 7
+  const targetX = board.x + (200 + col * 75) * k
+  const targetY = board.y + (1037 + 90 + row * 160) * k
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down()
   await page.mouse.move(targetX, targetY, { steps: 6 })
@@ -40,7 +40,7 @@ for (let i = 0; i < 12; i++) {
   await page.waitForTimeout(60)
 }
 
-await page.getByRole('button', { name: '对齐', exact: true }).click()
+await page.getByRole('button', { name: '两端对齐', exact: true }).click()
 await page.waitForTimeout(700)
 await page.screenshot({ path: 'docs/preview.png' })
 await browser.close()

@@ -131,7 +131,7 @@ const secondShape = await readLastTile()
 const jitterRerolled = JSON.stringify(firstShape) !== JSON.stringify(secondShape)
 
 // 5. 对齐 + 导出
-await page.getByRole('button', { name: '对齐', exact: true }).click()
+await page.getByRole('button', { name: '两端对齐', exact: true }).click()
 await page.waitForTimeout(110)
 await page.screenshot({ path: '.shots/06-align-glide.png' })
 await page.waitForTimeout(400)

@@ -1,4 +1,4 @@
-import type { CharCell, RatioId, Tile, Work } from './types'
+import type { CharCell, RatioId, Tile, TileAlign, Work } from './types'
 import { RATIOS } from './types'
 
 export const PAD = 76
@@ -187,6 +187,7 @@ export function alignTiles(
   artW: number,
   artH: number,
   compTop: number,
+  mode: TileAlign,
 ): Work['tiles'] {
   if (work.tiles.length === 0) return []
 
@@ -205,6 +206,16 @@ export function alignTiles(
   }
 
   const maxW = artW - PAD * 2
+  const naturalGap = size * 0.16
+  const rowWidths = rows.map((row) => {
+    const total = row.reduce((sum, tile) => sum + size * tile.jitter.scale, 0)
+    return total + naturalGap * Math.max(0, row.length - 1)
+  })
+  // 两端对齐时，以最长那一行的自然宽度作为两端，而不是画板边距。
+  const measure =
+    mode === 'justify' ? Math.min(maxW, Math.max(...rowWidths)) : maxW
+  const blockLeft = PAD + Math.max(0, (maxW - measure) / 2)
+
   const out: Work['tiles'] = []
   const rowStep = size * 1.6
   const zoneH = artH - compTop
@@ -215,15 +226,25 @@ export function alignTiles(
     const cells = [...row].sort((a, b) => a.x - b.x)
     const widths = cells.map((tile) => size * tile.jitter.scale)
     const totalW = widths.reduce((sum, width) => sum + width, 0)
-    const gap = cells.length > 1 ? Math.max(0, (maxW - totalW) / (cells.length - 1)) : 0
-    const lineW = totalW + gap * (cells.length - 1)
-    let cursor = PAD + Math.max(0, (maxW - lineW) / 2)
-    const rowY = Math.min(startY + rowIndex * rowStep, artH - size - 8)
+    const natural = totalW + naturalGap * Math.max(0, cells.length - 1)
 
+    let cursor = PAD
+    let gap = naturalGap
+    if (mode === 'center') {
+      cursor = PAD + (maxW - natural) / 2
+    } else if (mode === 'justify') {
+      cursor = blockLeft
+      gap =
+        cells.length > 1
+          ? naturalGap + Math.max(0, measure - natural) / (cells.length - 1)
+          : 0
+    }
+
+    const rowY = Math.min(startY + rowIndex * rowStep, artH - size - 8)
     cells.forEach((tile, i) => {
       out.push({
         ...tile,
-        x: cursor + rand(-size * 0.015, size * 0.015),
+        x: cursor + rand(-size * 0.008, size * 0.008),
         y: rowY + rand(-size * 0.05, size * 0.05),
       })
       cursor += widths[i] + gap
