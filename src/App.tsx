@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Artboard from './Artboard'
 import { exportPng } from './exportPng'
 import { FONT_PACKS, fontPackOf } from './fonts'
-import { hashSeed } from './holes'
+import { hashSeed, punchJitter } from './holes'
 import { alignTiles, computeLayout, flowSlot } from './layout'
 import { initialStore, loadStore, saveStore, type Persisted } from './storage'
 import {
@@ -109,40 +109,38 @@ export default function App() {
     })
   }
 
-  const addTile = (charId: number, x: number, y: number, rot: number) => {
+  const addTile = (charId: number, x: number, y: number, rot: number, scale: number) => {
     const topZ = current.tiles.reduce((max, tile) => Math.max(max, tile.z), 0)
     commit({
       ...current,
       punched: [...current.punched, charId],
-      tiles: [...current.tiles, { charId, x, y, rot, z: topZ + 1 }],
+      tiles: [...current.tiles, { charId, x, y, rot, scale, z: topZ + 1 }],
     })
   }
-
-  const randomRot = () => (Math.random() - 0.5) * 12
 
   const punch = (charId: number) => {
     if (current.punched.includes(charId)) return
     if (board.chars[charId] === '\n') return
     const size = board.layout.size
+    const jitter = punchJitter(charId, seed)
+    const tileSize = size * jitter.scale
     const slot = flowSlot(current.tiles.length, size, board.artW, board.artH, board.compTop)
-    const x = Math.max(
-      0,
-      Math.min(board.artW - size, slot.x + (Math.random() - 0.5) * size * 0.6),
-    )
-    const y = Math.max(
-      board.compTop,
-      Math.min(board.artH - size, slot.y + (Math.random() - 0.5) * size * 0.5),
-    )
-    addTile(charId, x, y, randomRot())
+    const centerX = slot.x + size / 2 + jitter.dx * size
+    const centerY = slot.y + size / 2 + jitter.dy * size
+    const x = Math.max(0, Math.min(board.artW - tileSize, centerX - tileSize / 2))
+    const y = Math.max(board.compTop, Math.min(board.artH - tileSize, centerY - tileSize / 2))
+    addTile(charId, x, y, jitter.rot, jitter.scale)
   }
 
   const punchAt = (charId: number, centerX: number, centerY: number) => {
     if (current.punched.includes(charId)) return
     if (board.chars[charId] === '\n') return
     const size = board.layout.size
-    const x = Math.max(0, Math.min(board.artW - size, centerX - size / 2))
-    const y = Math.max(board.compTop, Math.min(board.artH - size, centerY - size / 2))
-    addTile(charId, x, y, randomRot())
+    const jitter = punchJitter(charId, seed)
+    const tileSize = size * jitter.scale
+    const x = Math.max(0, Math.min(board.artW - tileSize, centerX - tileSize / 2))
+    const y = Math.max(board.compTop, Math.min(board.artH - tileSize, centerY - tileSize / 2))
+    addTile(charId, x, y, jitter.rot, jitter.scale)
   }
 
   const moveTile = (charId: number, x: number, y: number) => {

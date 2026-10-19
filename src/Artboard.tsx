@@ -231,8 +231,10 @@ export default function Artboard({
       onReturnTile(dragging.charId)
       return
     }
-    const nextX = Math.max(0, Math.min(artW - size, dragging.tileX + dx))
-    const nextY = Math.max(compTop, Math.min(artH - size, dragging.tileY + dy))
+    const dragged = work.tiles.find((tile) => tile.charId === dragging.charId)
+    const tileSize = size * (dragged?.scale ?? 1)
+    const nextX = Math.max(0, Math.min(artW - tileSize, dragging.tileX + dx))
+    const nextY = Math.max(compTop, Math.min(artH - tileSize, dragging.tileY + dy))
     onMoveTile(dragging.charId, nextX, nextY)
   }
 
@@ -276,6 +278,7 @@ export default function Artboard({
         const isDragging = tileDrag?.charId === tile.charId
         const left = isDragging ? tile.x + tileDrag.dx : tile.x
         const top = isDragging ? tile.y + tileDrag.dy : tile.y
+        const tileSize = size * tile.scale
         return (
           <div
             key={tile.charId}
@@ -283,13 +286,13 @@ export default function Artboard({
             style={{
               left,
               top,
-              width: size,
-              height: size,
+              width: tileSize,
+              height: tileSize,
               transform: `rotate(${tile.rot}deg)`,
               zIndex: isDragging ? 999 : tile.z,
               background: palette.chip,
               color: palette.chipInk,
-              fontSize: size * 0.82,
+              fontSize: tileSize * 0.82,
               fontWeight: 600,
               fontFamily: fontStack,
             }}

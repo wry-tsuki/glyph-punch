@@ -69,20 +69,21 @@ export async function exportPng(
   ctx.fillRect(0, compTop, artW, artH - compTop)
 
   for (const tile of work.tiles) {
-    const cx = tile.x + size / 2
-    const cy = tile.y + size / 2
+    const tileSize = size * tile.scale
+    const cx = tile.x + tileSize / 2
+    const cy = tile.y + tileSize / 2
     ctx.save()
     ctx.translate(cx, cy)
     ctx.rotate((tile.rot * Math.PI) / 180)
     ctx.shadowColor = 'rgba(0,0,0,0.28)'
-    ctx.shadowBlur = size * 0.18
-    ctx.shadowOffsetY = size * 0.06
+    ctx.shadowBlur = tileSize * 0.18
+    ctx.shadowOffsetY = tileSize * 0.06
     ctx.fillStyle = palette.chip
-    ctx.fillRect(-size / 2, -size / 2, size, size)
+    ctx.fillRect(-tileSize / 2, -tileSize / 2, tileSize, tileSize)
     ctx.shadowColor = 'transparent'
     ctx.fillStyle = palette.chipInk
-    ctx.font = `600 ${size * 0.82}px ${fontStack}`
-    ctx.fillText(chars[tile.charId] ?? '', 0, size * 0.02)
+    ctx.font = `600 ${tileSize * 0.82}px ${fontStack}`
+    ctx.fillText(chars[tile.charId] ?? '', 0, tileSize * 0.02)
     ctx.restore()
   }
 

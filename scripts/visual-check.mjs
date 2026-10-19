@@ -32,6 +32,19 @@ for (const id of ids.slice(0, 3)) {
 }
 const tilesAfterClick = await page.locator('.tile').count()
 
+const readGeometry = () =>
+  page.evaluate(() => {
+    const pick = (selector) =>
+      [...document.querySelectorAll(selector)].slice(0, 3).map((node) => ({
+        rot: node.style.transform,
+        w: node.style.width,
+      }))
+    return { holes: pick('.hole'), tiles: pick('.tile') }
+  })
+
+const geometryAfterClick = await readGeometry()
+const sameShape = JSON.stringify(geometryAfterClick.holes) === JSON.stringify(geometryAfterClick.tiles)
+
 // 2. 从原文拖第四个字到创作区，松手位置即落点
 const dragId = ids[3]
 const glyphBox = await page.locator(`.glyph[data-id="${dragId}"]`).boundingBox()
@@ -70,6 +83,10 @@ await page.getByRole('button', { name: '对齐', exact: true }).click()
 await page.waitForTimeout(400)
 await page.screenshot({ path: '.shots/04-aligned.png' })
 
+const geometryAfterAlign = await readGeometry()
+const sameShapeAfterAlign =
+  JSON.stringify(geometryAfterAlign.holes) === JSON.stringify(geometryAfterAlign.tiles)
+
 const [download] = await Promise.all([
   page.waitForEvent('download', { timeout: 15000 }),
   page.getByRole('button', { name: '导出 PNG' }).click(),
@@ -88,6 +105,9 @@ console.log(
       dropDeltaPx: Math.round(dropDelta),
       tilesAfterReturnClick,
       tilesAfterDragBack,
+      sameShape,
+      sameShapeAfterAlign,
+      geometryAfterClick,
       errors,
     },
     null,

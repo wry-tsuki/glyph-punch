@@ -78,6 +78,7 @@ export interface Tile {
   x: number
   y: number
   rot: number
+  scale: number
   z: number
 }
 
