@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Artboard from './Artboard'
+import Artboard, { type IncomingFlight } from './Artboard'
 import { exportPng } from './exportPng'
 import { FONT_PACKS, fontPackOf } from './fonts'
-import { randomJitter } from './holes'
-import { alignTiles, computeLayout, flowSlot } from './layout'
+import { holeGeometry, randomJitter } from './holes'
+import { alignTiles, computeLayout, randomTileSlot } from './layout'
 import { initialStore, loadStore, saveStore, type Persisted } from './storage'
 import {
   ALIGN_MODES,
@@ -32,6 +32,8 @@ export default function App() {
   const [draft, setDraft] = useState(current.text)
   const [title, setTitle] = useState(current.title)
   const [busy, setBusy] = useState(false)
+  const [incoming, setIncoming] = useState<IncomingFlight | null>(null)
+  const incomingTimer = useRef<number | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.42)
 
@@ -45,6 +47,13 @@ export default function App() {
   useEffect(() => {
     saveStore({ works: state.works, currentId: state.currentId })
   }, [state.works, state.currentId])
+
+  useEffect(
+    () => () => {
+      if (incomingTimer.current !== null) window.clearTimeout(incomingTimer.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     setDraft(current.text)
@@ -124,12 +133,35 @@ export default function App() {
     const size = board.layout.size
     const jitter = randomJitter()
     const tileSize = size * jitter.scale
-    const slot = flowSlot(current.tiles.length, size, board.artW, board.artH, board.compTop)
-    const centerX = slot.x + size / 2 + jitter.dx * size
-    const centerY = slot.y + size / 2 + jitter.dy * size
-    const x = Math.max(0, Math.min(board.artW - tileSize, centerX - tileSize / 2))
-    const y = Math.max(board.compTop, Math.min(board.artH - tileSize, centerY - tileSize / 2))
-    addTile(charId, x, y, jitter)
+    const slot = randomTileSlot(
+      current.tiles,
+      tileSize,
+      size,
+      board.artW,
+      board.artH,
+      board.compTop,
+    )
+    addTile(charId, slot.x, slot.y, jitter)
+
+    const cell = board.layout.cells.find((item) => item.id === charId)
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!cell || reduceMotion) return
+
+    const hole = holeGeometry(jitter, cell)
+    if (incomingTimer.current !== null) window.clearTimeout(incomingTimer.current)
+    setIncoming({
+      charId,
+      fromX: hole.left,
+      fromY: hole.top,
+      toX: slot.x,
+      toY: slot.y,
+      rot: jitter.rot,
+      width: tileSize,
+    })
+    incomingTimer.current = window.setTimeout(() => {
+      incomingTimer.current = null
+      setIncoming(null)
+    }, 360)
   }
 
   const punchAt = (charId: number, centerX: number, centerY: number) => {
@@ -408,6 +440,7 @@ export default function App() {
               board={board}
               palette={palette}
               fontStack={fontPack.stack}
+              incoming={incoming}
               onPunch={punch}
               onPunchAt={punchAt}
               onMoveTile={moveTile}

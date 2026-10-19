@@ -30,7 +30,21 @@ for (const id of ids.slice(0, 3)) {
   await page.locator(`.glyph[data-id="${id}"]`).click()
   await page.waitForTimeout(80)
 }
+await page.waitForTimeout(450)
 const tilesAfterClick = await page.locator('.tile').count()
+
+const tileBoxes = await page.locator('.tile').evaluateAll((nodes) =>
+  nodes.map((node) => {
+    const rect = node.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, w: rect.width, h: rect.height }
+  }),
+)
+const overlapping = tileBoxes.some((box, index) =>
+  tileBoxes.slice(index + 1).some(
+    (other) =>
+      box.x < other.x + other.w && box.x + box.w > other.x && box.y < other.y + other.h && box.y + box.h > other.y,
+  ),
+)
 
 const readGeometry = () =>
   page.evaluate(() => {
@@ -140,10 +154,23 @@ await page.getByRole('button', { name: '1 : 1' }).click()
 await page.waitForTimeout(300)
 await page.screenshot({ path: '.shots/06-square.png' })
 
+// 7. 点击取字的飞行过程：中途纸片未入场，落地后才出现
+const beforeFlight = await page.locator('.tile').count()
+await page.locator(`.glyph[data-id="${ids[40]}"]`).click()
+await page.waitForTimeout(130)
+await page.screenshot({ path: '.shots/07-punch-flight.png' })
+const duringFlight = await page.locator('.tile').count()
+await page.waitForTimeout(380)
+const afterFlight = await page.locator('.tile').count()
+
 console.log(
   JSON.stringify(
     {
       tilesAfterClick,
+      overlapping,
+      beforeFlight,
+      duringFlight,
+      afterFlight,
       tilesAfterDrop,
       dropDeltaPx: Math.round(dropDelta),
       tilesAfterReturnClick,

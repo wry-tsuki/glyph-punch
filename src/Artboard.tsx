@@ -82,10 +82,21 @@ interface Props {
   board: BoardLayout
   palette: Palette
   fontStack: string
+  incoming: IncomingFlight | null
   onPunch: (charId: number) => void
   onPunchAt: (charId: number, x: number, y: number) => void
   onMoveTile: (charId: number, x: number, y: number) => void
   onReturnTile: (charId: number) => void
+}
+
+export interface IncomingFlight {
+  charId: number
+  fromX: number
+  fromY: number
+  toX: number
+  toY: number
+  rot: number
+  width: number
 }
 
 interface TileDrag {
@@ -120,6 +131,7 @@ export default function Artboard({
   board,
   palette,
   fontStack,
+  incoming,
   onPunch,
   onPunchAt,
   onMoveTile,
@@ -347,6 +359,7 @@ export default function Artboard({
       />
       {work.tiles.map((tile) => {
         if (flight?.charId === tile.charId) return null
+        if (incoming?.charId === tile.charId) return null
         const isDragging = tileDrag?.charId === tile.charId
         const left = isDragging ? tile.x + tileDrag.dx : tile.x
         const top = isDragging ? tile.y + tileDrag.dy : tile.y
@@ -382,6 +395,29 @@ export default function Artboard({
       <div className={`dropzone${tileDrag?.overText ? ' is-active' : ''}`} style={{ height: compTop }}>
         {tileDrag?.overText ? <span className="drop-hint">松手放回原文</span> : null}
       </div>
+      {incoming ? (
+        <div
+          key={incoming.charId}
+          className="tile-punch"
+          style={
+            {
+              left: incoming.fromX,
+              top: incoming.fromY,
+              width: incoming.width,
+              height: incoming.width,
+              fontSize: incoming.width,
+              background: palette.chip,
+              color: palette.chipInk,
+              fontFamily: fontStack,
+              '--dx': `${incoming.toX - incoming.fromX}px`,
+              '--dy': `${incoming.toY - incoming.fromY}px`,
+              '--rot': `${incoming.rot}deg`,
+            } as React.CSSProperties
+          }
+        >
+          {chars[incoming.charId]}
+        </div>
+      ) : null}
       {flight ? (
         <div
           className="tile-fly"

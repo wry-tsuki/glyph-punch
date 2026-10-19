@@ -1,4 +1,4 @@
-import type { AlignMode, CharCell, RatioId, Work } from './types'
+import type { AlignMode, CharCell, RatioId, Tile, Work } from './types'
 import { RATIOS } from './types'
 
 export const PAD = 76
@@ -146,7 +146,58 @@ export function flowSlot(
   return { x, y }
 }
 
+/**
+ * 点击取字时的落点：在创作区里随机，碰到已有纸片就重掷。
+ * 尝试 40 次仍挤不下时退回顺序槽位，保证一定落得下。
+ */
+export function randomTileSlot(
+  tiles: Tile[],
+  tileSize: number,
+  size: number,
+  artW: number,
+  artH: number,
+  compTop: number,
+): { x: number; y: number } {
+  const minX = PAD
+  const maxX = artW - PAD
+  const minY = compTop + 26
+  const maxY = artH - 26
+  const gap = size * 0.16
+  const roomX = maxX - minX - tileSize
+  const roomY = maxY - minY - tileSize
+
+  if (roomX > 0 && roomY > 0) {
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const x = minX + Math.random() * roomX
+      const y = minY + Math.random() * roomY
+      const collides = tiles.some((tile) => {
+        const other = size * tile.jitter.scale
+        return (
+          x < tile.x + other + gap &&
+          x + tileSize + gap > tile.x &&
+          y < tile.y + other + gap &&
+          y + tileSize + gap > tile.y
+        )
+      })
+      if (!collides) return { x, y }
+    }
+  }
+
+  return flowSlot(tiles.length, size, artW, artH, compTop)
+}
+
 const rand = (min: number, max: number) => min + Math.random() * (max - min)
+
+function packRows(tiles: Work['tiles'], size: number, maxW: number): Work['tiles'][] {
+  const gap = size * 0.16
+  const perRow = Math.max(1, Math.floor((maxW + gap) / (size + gap)))
+  const ordered = [...tiles].sort((a, b) => a.y - b.y || a.x - b.x)
+  const rows: Work['tiles'][] = []
+  for (let i = 0; i < ordered.length; i += perRow) {
+    rows.push(ordered.slice(i, i + perRow))
+  }
+  return rows
+}
 
 export function alignTiles(
   work: Work,
@@ -173,13 +224,19 @@ export function alignTiles(
 
   const maxW = artW - PAD * 2
   const naturalGap = size * 0.24
+
+  // 平均每行不到两张时，行意图不成立（散落或零星成对），
+  // 按阅读顺序打包成行，否则会排出一列竖向的“行”。
+  const scattered = rows.length > 1 && work.tiles.length / rows.length < 1.8
+  const finalRows = scattered ? packRows(work.tiles, size, maxW) : rows
+
   const out: Work['tiles'] = []
   const rowStep = size * 1.6
   const zoneH = artH - compTop
   const startY =
-    compTop + Math.max(28, (zoneH - rows.length * rowStep) / 2) + (rowStep - size) / 2
+    compTop + Math.max(28, (zoneH - finalRows.length * rowStep) / 2) + (rowStep - size) / 2
 
-  rows.forEach((row, rowIndex) => {
+  finalRows.forEach((row, rowIndex) => {
     const cells = [...row].sort((a, b) => a.x - b.x)
     const available = maxW - cells.length * size
     const gap = Math.max(0, Math.min(naturalGap, cells.length > 1 ? available / (cells.length - 1) : 0))
