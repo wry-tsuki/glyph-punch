@@ -83,6 +83,7 @@ interface Props {
   palette: Palette
   fontStack: string
   incoming: IncomingFlight | null
+  resetting: boolean
   onPunch: (charId: number) => void
   onPunchAt: (charId: number, x: number, y: number) => void
   onMoveTile: (charId: number, x: number, y: number) => void
@@ -132,6 +133,7 @@ export default function Artboard({
   palette,
   fontStack,
   incoming,
+  resetting,
   onPunch,
   onPunchAt,
   onMoveTile,
@@ -322,7 +324,7 @@ export default function Artboard({
 
   return (
     <div
-      className="board"
+      className={`board${resetting ? ' is-resetting' : ''}`}
       ref={boardRef}
       onPointerDown={startTextDrag}
       onPointerMove={moveTextDrag}
@@ -358,6 +360,7 @@ export default function Artboard({
         fontStack={fontStack}
       />
       {work.tiles.map((tile) => {
+        if (resetting) return null
         if (flight?.charId === tile.charId) return null
         if (incoming?.charId === tile.charId) return null
         const isDragging = tileDrag?.charId === tile.charId
@@ -395,6 +398,37 @@ export default function Artboard({
       <div className={`dropzone${tileDrag?.overText ? ' is-active' : ''}`} style={{ height: compTop }}>
         {tileDrag?.overText ? <span className="drop-hint">松手放回原文</span> : null}
       </div>
+      {resetting
+        ? work.tiles.map((tile, index) => {
+            const cell = layout.cells.find((item) => item.id === tile.charId)
+            if (!cell) return null
+            const hole = holeGeometry(tile.jitter, cell)
+            const tileSize = size * tile.jitter.scale
+            return (
+              <div
+                key={`reset-${tile.charId}`}
+                className="tile-return"
+                style={
+                  {
+                    left: tile.x,
+                    top: tile.y,
+                    width: tileSize,
+                    height: tileSize,
+                    fontSize: tileSize,
+                    background: palette.chip,
+                    color: palette.chipInk,
+                    fontFamily: fontStack,
+                    '--dx': `${hole.left - tile.x}px`,
+                    '--dy': `${hole.top - tile.y}px`,
+                    '--delay': `${Math.min(index, 12) * 18}ms`,
+                  } as React.CSSProperties
+                }
+              >
+                {chars[tile.charId]}
+              </div>
+            )
+          })
+        : null}
       {incoming ? (
         <div
           key={incoming.charId}

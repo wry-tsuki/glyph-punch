@@ -33,7 +33,9 @@ export default function App() {
   const [title, setTitle] = useState(current.title)
   const [busy, setBusy] = useState(false)
   const [incoming, setIncoming] = useState<IncomingFlight | null>(null)
+  const [resetting, setResetting] = useState(false)
   const incomingTimer = useRef<number | null>(null)
+  const resetTimer = useRef<number | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.42)
 
@@ -51,6 +53,7 @@ export default function App() {
   useEffect(
     () => () => {
       if (incomingTimer.current !== null) window.clearTimeout(incomingTimer.current)
+      if (resetTimer.current !== null) window.clearTimeout(resetTimer.current)
     },
     [],
   )
@@ -95,12 +98,25 @@ export default function App() {
   }
 
   const resetAll = () => {
+    if (resetting) return
     if (current.tiles.length === 0 && current.punched.length === 0) return
     cancelIncoming()
-    commit({ ...current, punched: [], tiles: [] })
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion || current.tiles.length === 0) {
+      commit({ ...current, punched: [], tiles: [] })
+      return
+    }
+    const duration = 320 + Math.min(current.tiles.length, 12) * 18 + 90
+    setResetting(true)
+    resetTimer.current = window.setTimeout(() => {
+      resetTimer.current = null
+      setResetting(false)
+      commit({ ...current, punched: [], tiles: [] })
+    }, duration)
   }
 
   const undo = () => {
+    if (resetting) return
     setState((previous) => {
       const restored = previous.past[previous.past.length - 1]
       if (!restored) return previous
@@ -117,6 +133,7 @@ export default function App() {
   }
 
   const redo = () => {
+    if (resetting) return
     setState((previous) => {
       const restored = previous.future[0]
       if (!restored) return previous
@@ -142,6 +159,7 @@ export default function App() {
   }
 
   const punch = (charId: number) => {
+    if (resetting) return
     if (current.punched.includes(charId)) return
     if (board.chars[charId] === '\n') return
     const size = board.layout.size
@@ -179,6 +197,7 @@ export default function App() {
   }
 
   const punchAt = (charId: number, centerX: number, centerY: number) => {
+    if (resetting) return
     if (current.punched.includes(charId)) return
     if (board.chars[charId] === '\n') return
     const size = board.layout.size
@@ -208,6 +227,7 @@ export default function App() {
   }
 
   const doAlign = () => {
+    if (resetting) return
     if (current.tiles.length === 0) return
     commit({
       ...current,
@@ -216,6 +236,7 @@ export default function App() {
   }
 
   const changeRatio = (ratio: RatioId) => {
+    if (resetting) return
     if (ratio === current.ratio) return
     const from = RATIOS[current.ratio]
     const to = RATIOS[ratio]
@@ -230,6 +251,7 @@ export default function App() {
   }
 
   const applyText = () => {
+    if (resetting) return
     cancelIncoming()
     commit({ ...current, text: draft, punched: [], tiles: [] })
   }
@@ -244,6 +266,7 @@ export default function App() {
   }
 
   const switchWork = (id: string) => {
+    if (resetting) return
     cancelIncoming()
     setState((previous) => ({ ...previous, currentId: id, past: [], future: [] }))
   }
@@ -422,13 +445,13 @@ export default function App() {
         <section className="section">
           <div className="section-title">操作</div>
           <div className="row">
-            <button className="btn" type="button" onClick={doAlign} disabled={current.tiles.length === 0}>
+            <button className="btn" type="button" onClick={doAlign} disabled={current.tiles.length === 0 || resetting}>
               对齐
             </button>
-            <button className="btn" type="button" onClick={undo} disabled={state.past.length === 0}>
+            <button className="btn" type="button" onClick={undo} disabled={state.past.length === 0 || resetting}>
               撤销
             </button>
-            <button className="btn" type="button" onClick={redo} disabled={state.future.length === 0}>
+            <button className="btn" type="button" onClick={redo} disabled={state.future.length === 0 || resetting}>
               重做
             </button>
           </div>
@@ -436,11 +459,11 @@ export default function App() {
             className="btn btn-block"
             type="button"
             onClick={resetAll}
-            disabled={current.tiles.length === 0}
+            disabled={current.tiles.length === 0 || resetting}
           >
-            全部放回原文
+            {resetting ? '放回中…' : '全部放回原文'}
           </button>
-          <button className="btn btn-primary btn-block" type="button" onClick={doExport} disabled={busy}>
+          <button className="btn btn-primary btn-block" type="button" onClick={doExport} disabled={busy || resetting}>
             {busy ? '导出中…' : '导出 PNG'}
           </button>
           <p className="stat">
@@ -467,6 +490,7 @@ export default function App() {
               palette={palette}
               fontStack={fontPack.stack}
               incoming={incoming}
+              resetting={resetting}
               onPunch={punch}
               onPunchAt={punchAt}
               onMoveTile={moveTile}

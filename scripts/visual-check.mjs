@@ -163,17 +163,24 @@ const duringFlight = await page.locator('.tile').count()
 await page.waitForTimeout(380)
 const afterFlight = await page.locator('.tile').count()
 
-// 8. 全部放回原文 + 撤销恢复
+// 8. 全部放回原文 + 撤销恢复（带飞回动画）
 const beforeReset = await page.locator('.tile').count()
 await page.getByRole('button', { name: '全部放回原文' }).click()
-await page.waitForTimeout(400)
+await page.waitForTimeout(150)
+await page.screenshot({ path: '.shots/08-reset-flight.png' })
+const duringReset = {
+  tiles: await page.locator('.tile').count(),
+  flying: await page.locator('.tile-return').count(),
+  holes: await page.locator('.hole').count(),
+}
+await page.waitForTimeout(900)
 const resetState = {
   tiles: await page.locator('.tile').count(),
   holes: await page.locator('.hole').count(),
   glyphs: await page.locator('.glyph').count(),
 }
 await page.getByRole('button', { name: '撤销', exact: true }).click()
-await page.waitForTimeout(400)
+await page.waitForTimeout(500)
 const afterUndoReset = await page.locator('.tile').count()
 
 console.log(
@@ -185,6 +192,7 @@ console.log(
       duringFlight,
       afterFlight,
       beforeReset,
+      duringReset,
       resetState,
       afterUndoReset,
       tilesAfterDrop,

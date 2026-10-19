@@ -456,6 +456,38 @@ body {
   }
 }
 
+.tile-return {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 1002;
+  will-change: transform, opacity;
+  animation: chip-return 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes chip-return {
+  0% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
+}
+
+.board.is-resetting {
+  pointer-events: none;
+}
+
 .dropzone {
   position: absolute;
   top: 0;
@@ -511,6 +543,10 @@ body {
   }
 
   .tile-punch {
+    display: none;
+  }
+
+  .tile-return {
     display: none;
   }
 }
