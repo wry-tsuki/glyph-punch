@@ -1,20 +1,12 @@
 import { DEFAULT_FONT_ID } from './fonts'
 
 export type RatioId = '3:4' | '1:1' | '9:16'
-export type AlignMode = 'left' | 'justify' | 'center' | 'right'
 
 export const RATIOS: Record<RatioId, { w: number; h: number; label: string }> = {
   '3:4': { w: 1080, h: 1440, label: '3 : 4' },
   '1:1': { w: 1080, h: 1080, label: '1 : 1' },
   '9:16': { w: 1080, h: 1920, label: '9 : 16' },
 }
-
-export const ALIGN_MODES: { id: AlignMode; label: string }[] = [
-  { id: 'left', label: '左对齐' },
-  { id: 'justify', label: '两端' },
-  { id: 'center', label: '居中' },
-  { id: 'right', label: '右对齐' },
-]
 
 export interface Palette {
   id: string
@@ -97,7 +89,6 @@ export interface Work {
   ratio: RatioId
   paletteId: string
   fontId: string
-  align: AlignMode
   punched: number[]
   tiles: Tile[]
   updatedAt: number
@@ -120,7 +111,6 @@ export function createWork(partial: Partial<Work> = {}): Work {
     ratio: '3:4',
     paletteId: 'xuan',
     fontId: DEFAULT_FONT_ID,
-    align: 'left',
     punched: [],
     tiles: [],
     updatedAt: Date.now(),

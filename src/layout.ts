@@ -1,16 +1,10 @@
-import type { AlignMode, CharCell, RatioId, Tile, Work } from './types'
+import type { CharCell, RatioId, Tile, Work } from './types'
 import { RATIOS } from './types'
 
 export const PAD = 76
 export const LINE_HEIGHT = 1.62
 export const TEXT_AREA_RATIO = 0.66
 export const COMP_TOP_RATIO = 0.72
-
-/**
- * 字号不要顶满可用宽度，留 4% 的余量：
- * 这样所有对齐模式共用一个字号，左对齐留毛边，两端对齐才有空间把行撑满。
- */
-const FIT_RATIO = 0.96
 
 export interface TextLayout {
   size: number
@@ -51,7 +45,6 @@ function layoutAt(
   size: number,
   availW: number,
   availH: number,
-  align: AlignMode,
   originX: number,
   originY: number,
 ): TextLayout {
@@ -64,22 +57,11 @@ function layoutAt(
   lines.forEach((ids, row) => {
     const n = ids.length
     if (n === 0) return
-    let x0 = 0
-    let step = size
-    if (align === 'right') x0 = availW - n * size
-    else if (align === 'center') x0 = (availW - n * size) / 2
-    else if (align === 'justify' && n > 1) {
-      // 只有接近满宽的行才拉字距；太短的行硬撑会拉出夸张空隙。
-      const natural = n * size
-      const ideal = (availW - size) / (n - 1)
-      if (natural >= availW * 0.65 && ideal <= size * 1.6) step = ideal
-    }
-
     ids.forEach((id, k) => {
       cells.push({
         id,
         ch: chars[id],
-        x: originX + x0 + k * step,
+        x: originX + k * size,
         y: originY + row * lh,
         size,
       })
@@ -108,11 +90,11 @@ export function computeLayout(work: Work): BoardLayout {
   // 先尝试让每一行都不折行：字号由最长的一行决定。
   const paragraphs = work.text.split('\n')
   const longest = Math.max(1, ...paragraphs.map((line) => Array.from(line).length))
-  const noWrapSize = Math.min(96, Math.floor((availW * FIT_RATIO) / longest))
+  const noWrapSize = Math.min(96, Math.floor(availW / longest))
 
   let best = 0
   if (noWrapSize >= 14) {
-    const trial = layoutAt(chars, noWrapSize, availW, availH, work.align, originX, 0)
+    const trial = layoutAt(chars, noWrapSize, availW, availH, originX, 0)
     if (trial.lineCount * noWrapSize * LINE_HEIGHT <= availH) best = noWrapSize
   }
 
@@ -123,7 +105,7 @@ export function computeLayout(work: Work): BoardLayout {
     best = 6
     while (lo <= hi) {
       const mid = (lo + hi) >> 1
-      const test = layoutAt(chars, mid, availW, availH, work.align, originX, 0)
+      const test = layoutAt(chars, mid, availW, availH, originX, 0)
       if (!test.overflow) {
         best = mid
         lo = mid + 1
@@ -133,10 +115,10 @@ export function computeLayout(work: Work): BoardLayout {
     }
   }
 
-  const measured = layoutAt(chars, best, availW, availH, work.align, originX, 0)
+  const measured = layoutAt(chars, best, availW, availH, originX, 0)
   const textHeight = measured.lineCount * best * LINE_HEIGHT
   const originY = PAD + Math.max(0, (availH - textHeight) / 2)
-  const layout = layoutAt(chars, best, availW, availH, work.align, originX, originY)
+  const layout = layoutAt(chars, best, availW, availH, originX, originY)
   return { layout, chars, artW, artH, compTop: Math.round(artH * COMP_TOP_RATIO) }
 }
 
@@ -223,7 +205,6 @@ export function alignTiles(
   }
 
   const maxW = artW - PAD * 2
-  const naturalGap = size * 0.24
   const out: Work['tiles'] = []
   const rowStep = size * 1.6
   const zoneH = artH - compTop
@@ -232,18 +213,20 @@ export function alignTiles(
 
   rows.forEach((row, rowIndex) => {
     const cells = [...row].sort((a, b) => a.x - b.x)
-    const available = maxW - cells.length * size
-    const gap = Math.max(0, Math.min(naturalGap, cells.length > 1 ? available / (cells.length - 1) : 0))
-    const lineW = cells.length * size + (cells.length - 1) * gap
-    const startX = PAD + (maxW - lineW) / 2
+    const widths = cells.map((tile) => size * tile.jitter.scale)
+    const totalW = widths.reduce((sum, width) => sum + width, 0)
+    const gap = cells.length > 1 ? Math.max(0, (maxW - totalW) / (cells.length - 1)) : 0
+    const lineW = totalW + gap * (cells.length - 1)
+    let cursor = PAD + Math.max(0, (maxW - lineW) / 2)
     const rowY = Math.min(startY + rowIndex * rowStep, artH - size - 8)
 
     cells.forEach((tile, i) => {
       out.push({
         ...tile,
-        x: startX + i * (size + gap) + rand(-size * 0.04, size * 0.04),
+        x: cursor + rand(-size * 0.015, size * 0.015),
         y: rowY + rand(-size * 0.05, size * 0.05),
       })
+      cursor += widths[i] + gap
     })
   })
 

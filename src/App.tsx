@@ -6,12 +6,10 @@ import { holeGeometry, randomJitter } from './holes'
 import { alignTiles, computeLayout, randomTileSlot } from './layout'
 import { initialStore, loadStore, saveStore, type Persisted } from './storage'
 import {
-  ALIGN_MODES,
   PALETTES,
   RATIOS,
   createWork,
   paletteOf,
-  type AlignMode,
   type PunchJitter,
   type RatioId,
   type Work,
@@ -41,7 +39,7 @@ export default function App() {
 
   const board = useMemo(
     () => computeLayout(current),
-    [current.text, current.ratio, current.align],
+    [current.text, current.ratio],
   )
   const palette = paletteOf(current.paletteId)
   const fontPack = fontPackOf(current.fontId)
@@ -385,19 +383,6 @@ export default function App() {
                 onClick={() => changeRatio(id)}
               >
                 {RATIOS[id].label}
-              </button>
-            ))}
-          </div>
-          <div className="seg" role="group" aria-label="文本对齐">
-            {ALIGN_MODES.map((mode) => (
-              <button
-                key={mode.id}
-                type="button"
-                className={current.align === mode.id ? 'is-active' : ''}
-                aria-pressed={current.align === mode.id}
-                onClick={() => commit({ ...current, align: mode.id as AlignMode })}
-              >
-                {mode.label}
               </button>
             ))}
           </div>
