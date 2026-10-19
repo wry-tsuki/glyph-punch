@@ -233,10 +233,12 @@ export function alignTiles(
     if (mode === 'center') {
       cursor = blockLeft + (measure - natural) / 2
     } else if (mode === 'justify') {
-      gap =
-        cells.length > 1
-          ? naturalGap + Math.max(0, measure - natural) / (cells.length - 1)
-          : 0
+      if (cells.length === 1) {
+        // 只有一个字时没有两端可撑，按块心居中。
+        cursor = blockLeft + (measure - widths[0]) / 2
+      } else {
+        gap = naturalGap + Math.max(0, measure - natural) / (cells.length - 1)
+      }
     }
 
     const rowY = Math.min(startY + rowIndex * rowStep, artH - size - 8)

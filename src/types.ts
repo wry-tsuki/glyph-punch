@@ -6,7 +6,7 @@ export type TileAlign = 'left' | 'center' | 'justify'
 
 export const TILE_ALIGNS: { id: TileAlign; label: string }[] = [
   { id: 'left', label: '左对齐' },
-  { id: 'center', label: '居中' },
+  { id: 'center', label: '居中对齐' },
   { id: 'justify', label: '两端对齐' },
 ]
 
