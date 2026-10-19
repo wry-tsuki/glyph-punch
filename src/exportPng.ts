@@ -1,5 +1,5 @@
-import type { BoardLayout } from './layout'
 import { holeGeometry } from './holes'
+import type { BoardLayout } from './layout'
 import type { Palette, Work } from './types'
 
 function roundedRect(

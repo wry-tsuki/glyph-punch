@@ -180,7 +180,9 @@ body {
   font-size: 13.5px;
   letter-spacing: 0.03em;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .choice:hover:not(:disabled) {
@@ -279,7 +281,7 @@ body {
 }
 
 .work-menu button.is-current::before {
-  content: '';
+  content: "";
   width: 5px;
   height: 5px;
   flex: none;
@@ -288,7 +290,7 @@ body {
 }
 
 .work-menu button:not(.is-current)::before {
-  content: '';
+  content: "";
   width: 5px;
   height: 5px;
   flex: none;
@@ -357,7 +359,9 @@ body {
   font-size: 13px;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .text-btn:hover:not(:disabled) {
@@ -429,7 +433,9 @@ body {
   font-weight: 600;
   letter-spacing: 0.16em;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .export:hover:not(:disabled) {
@@ -489,7 +495,9 @@ body {
 
 .frame {
   position: relative;
-  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.66), 0 0 0 1px rgba(201, 185, 143, 0.22);
+  box-shadow:
+    0 40px 100px rgba(0, 0, 0, 0.66),
+    0 0 0 1px rgba(201, 185, 143, 0.22);
 }
 
 .board-scaler {
@@ -529,7 +537,10 @@ body {
   align-items: center;
   justify-content: center;
   cursor: grab;
-  transition: scale 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+  transition:
+    scale 0.12s ease,
+    opacity 0.12s ease,
+    background 0.12s ease;
 }
 
 .glyph:hover {
@@ -583,7 +594,9 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 1px;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.28), 0 4px 10px rgba(0, 0, 0, 0.22);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.28),
+    0 4px 10px rgba(0, 0, 0, 0.22);
   cursor: grab;
   animation: tile-settle 0.22s ease-out;
   transition:
@@ -598,7 +611,9 @@ body {
 
 .tile:hover {
   translate: 0 -1px;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.26), 0 10px 20px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.26),
+    0 10px 20px rgba(0, 0, 0, 0.28);
 }
 
 @keyframes tile-settle {
@@ -752,4 +767,59 @@ body {
   .app {
     grid-template-columns: 320px minmax(0, 1fr);
   }
+}
+
+.crash {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: #12151a;
+  color: var(--text);
+}
+
+.crash-panel {
+  width: min(560px, 100%);
+  padding: 28px;
+  border: 1px solid var(--rail-line);
+  border-radius: 2px;
+  background: #171b21;
+}
+
+.crash-panel h1 {
+  margin: 0 0 10px;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.crash-panel p {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--dim);
+}
+
+.crash-panel pre {
+  overflow: auto;
+  margin: 0 0 20px;
+  padding: 12px;
+  border: 1px solid var(--rail-line);
+  background: #0e1217;
+  color: rgba(232, 224, 200, 0.7);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.crash-panel button {
+  padding: 9px 18px;
+  border: 1px solid var(--brass);
+  border-radius: 2px;
+  background: var(--brass);
+  color: #151a20;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }

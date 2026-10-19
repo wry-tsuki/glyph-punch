@@ -1,0 +1,64 @@
+name: Bug 报告
+description: 报告一个可复现的问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量提供可复现的步骤；涉及界面或导出的问题，附截图会快很多。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 实际行为与预期行为的差异
+      placeholder: 点击「两端对齐」后，纸片没有撑满块宽，而是全部堆在左侧……
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 粘贴一首七律
+        2. 打孔 12 个字
+        3. 点击「两端对齐」
+        4. 看到……
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      description: 浏览器与版本、操作系统、屏幕尺寸
+      placeholder: Chrome 141 / Windows 11 / 1600×1000
+    validations:
+      required: true
+
+  - type: textarea
+    id: extras
+    attributes:
+      label: 截图、录屏或作品 JSON（可选）
+      description: 可以直接把图片拖进输入框
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 确认
+      options:
+        - label: 已搜索现有 Issue，没有重复
+          required: true
+        - label: 已阅读 docs/PRD.md 中已确定的范围
+          required: false

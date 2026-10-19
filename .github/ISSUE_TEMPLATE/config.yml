@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 需求与范围
+    url: https://github.com/wry-tsuki/glyph-punch/blob/main/docs/PRD.md
+    about: 先看看已经确定的范围、决策与路线图
+  - name: 工程结构
+    url: https://github.com/wry-tsuki/glyph-punch/blob/main/docs/ARCHITECTURE.md
+    about: 模块划分、数据流与导出机制

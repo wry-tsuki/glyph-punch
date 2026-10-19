@@ -4,15 +4,15 @@ import { exportPng } from './exportPng'
 import { FONT_PACKS, fontPackOf } from './fonts'
 import { holeGeometry, randomJitter } from './holes'
 import { alignTiles, computeLayout, randomTileSlot } from './layout'
-import { initialStore, loadStore, saveStore, type Persisted } from './storage'
+import { initialStore, loadStore, type Persisted, saveStore } from './storage'
 import {
-  PALETTES,
-  RATIOS,
-  TILE_ALIGNS,
   createWork,
-  paletteOf,
+  PALETTES,
   type PunchJitter,
+  paletteOf,
+  RATIOS,
   type RatioId,
+  TILE_ALIGNS,
   type TileAlign,
   type Work,
 } from './types'
@@ -42,10 +42,7 @@ export default function App() {
   const stageRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.42)
 
-  const board = useMemo(
-    () => computeLayout(current),
-    [current.text, current.ratio],
-  )
+  const board = useMemo(() => computeLayout(current), [current.text, current.ratio])
   const palette = paletteOf(current.paletteId)
   const fontPack = fontPackOf(current.fontId)
 
@@ -66,8 +63,15 @@ export default function App() {
     const closeOnOutside = (event: PointerEvent) => {
       if (!workMenuRef.current?.contains(event.target as Node)) setWorkMenuOpen(false)
     }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setWorkMenuOpen(false)
+    }
     document.addEventListener('pointerdown', closeOnOutside)
-    return () => document.removeEventListener('pointerdown', closeOnOutside)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutside)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
   }, [workMenuOpen])
 
   useEffect(() => {
@@ -137,9 +141,7 @@ export default function App() {
         ...previous,
         past: previous.past.slice(0, -1),
         future: currentWork ? [currentWork, ...previous.future] : previous.future,
-        works: previous.works.map((work) =>
-          work.id === previous.currentId ? restored : work,
-        ),
+        works: previous.works.map((work) => (work.id === previous.currentId ? restored : work)),
       }
     })
   }
@@ -154,9 +156,7 @@ export default function App() {
         ...previous,
         past: currentWork ? [...previous.past, currentWork] : previous.past,
         future: previous.future.slice(1),
-        works: previous.works.map((work) =>
-          work.id === previous.currentId ? restored : work,
-        ),
+        works: previous.works.map((work) => (work.id === previous.currentId ? restored : work)),
       }
     })
   }
@@ -299,6 +299,8 @@ export default function App() {
   }
 
   const removeWork = () => {
+    if (resetting) return
+    if (!window.confirm(`删除「${current.title}」？此操作无法撤销。`)) return
     cancelIncoming()
     setWorkMenuOpen(false)
     setState((previous) => {
@@ -355,7 +357,12 @@ export default function App() {
                 <button className="text-btn" type="button" onClick={addWork} title="新建作品">
                   新建
                 </button>
-                <button className="text-btn" type="button" onClick={removeWork} title="删除当前作品">
+                <button
+                  className="text-btn"
+                  type="button"
+                  onClick={removeWork}
+                  title="删除当前作品"
+                >
                   删除
                 </button>
                 {state.works.length > 1 ? (
@@ -555,8 +562,8 @@ export default function App() {
           <div className="stage-caption" style={{ width: board.artW * scale }}>
             <span>拖动取字 · 点击纸片放回</span>
             <span className="stage-caption-meta">
-              {RATIOS[current.ratio].label} / {board.artW} × {board.artH} / 字号{' '}
-              {board.layout.size} / {current.punched.length} 孔
+              {RATIOS[current.ratio].label} / {board.artW} × {board.artH} / 字号 {board.layout.size}{' '}
+              / {current.punched.length} 孔
             </span>
           </div>
         </div>

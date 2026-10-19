@@ -68,7 +68,13 @@ function layoutAt(
     })
   })
 
-  return { size, cells, lineCount: lines.length, overflow: height > availH, bottom: originY + height }
+  return {
+    size,
+    cells,
+    lineCount: lines.length,
+    overflow: height > availH,
+    bottom: originY + height,
+  }
 }
 
 export interface BoardLayout {
@@ -219,8 +225,7 @@ export function alignTiles(
   const out: Work['tiles'] = []
   const rowStep = size * 1.6
   const zoneH = artH - compTop
-  const startY =
-    compTop + Math.max(28, (zoneH - rows.length * rowStep) / 2) + (rowStep - size) / 2
+  const startY = compTop + Math.max(28, (zoneH - rows.length * rowStep) / 2) + (rowStep - size) / 2
 
   rows.forEach((row, rowIndex) => {
     const cells = [...row].sort((a, b) => a.x - b.x)

@@ -1,20 +1,12 @@
-import { chromium } from 'playwright-core'
-import { existsSync } from 'node:fs'
+import { openApp } from './browser.mjs'
 
-const CHROME = [
-  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-].find(existsSync)
-
-const browser = await chromium.launch({ executablePath: CHROME, headless: true })
-const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } })
+const { browser, page } = await openApp()
 const errors = []
 page.on('pageerror', (error) => errors.push(String(error)))
 page.on('console', (message) => {
   if (message.type() === 'error') errors.push(message.text())
 })
 
-await page.goto('http://localhost:5173', { waitUntil: 'networkidle' })
 await page.evaluate(() => localStorage.clear())
 await page.reload({ waitUntil: 'networkidle' })
 await page.waitForTimeout(600)
@@ -40,10 +32,15 @@ const tileBoxes = await page.locator('.tile').evaluateAll((nodes) =>
   }),
 )
 const overlapping = tileBoxes.some((box, index) =>
-  tileBoxes.slice(index + 1).some(
-    (other) =>
-      box.x < other.x + other.w && box.x + box.w > other.x && box.y < other.y + other.h && box.y + box.h > other.y,
-  ),
+  tileBoxes
+    .slice(index + 1)
+    .some(
+      (other) =>
+        box.x < other.x + other.w &&
+        box.x + box.w > other.x &&
+        box.y < other.y + other.h &&
+        box.y + box.h > other.y,
+    ),
 )
 
 const readGeometry = () =>

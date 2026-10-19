@@ -10,6 +10,12 @@ out/
 coverage/
 *.tsbuildinfo
 
+# Test / tooling artifacts
+.vitest/
+playwright-report/
+test-results/
+.biome/
+
 # Environment
 .env
 .env.local

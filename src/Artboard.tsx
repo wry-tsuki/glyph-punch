@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import type { BoardLayout } from './layout'
 import { holeGeometry, legacyJitter } from './holes'
+import type { BoardLayout } from './layout'
 import type { CharCell, Palette, PunchJitter, Tile, Work } from './types'
 
 interface TextLayerProps {
@@ -395,7 +395,10 @@ export default function Artboard({
           </div>
         )
       })}
-      <div className={`dropzone${tileDrag?.overText ? ' is-active' : ''}`} style={{ height: compTop }}>
+      <div
+        className={`dropzone${tileDrag?.overText ? ' is-active' : ''}`}
+        style={{ height: compTop }}
+      >
         {tileDrag?.overText ? <span className="drop-hint">松手放回原文</span> : null}
       </div>
       {resetting
